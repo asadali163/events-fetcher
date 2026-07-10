@@ -1,0 +1,512 @@
+{
+  "name": "Chicago Cubs vs New York Yankees: #BudFridays Cubs 1960s Replica Jersey",
+  "type": "event",
+  "id": "Z7r9jZ1A7QFpF",
+  "test": false,
+  "url": "https://www.ticketmaster.com/event/Z7r9jZ1A7QFpF",
+  "locale": "en-us",
+  "images": [
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_16_9.jpg",
+      "width": 1024,
+      "height": 576,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_SOURCE",
+      "width": 2426,
+      "height": 1365,
+      "fallback": false
+    },
+    {
+      "ratio": "3_2",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_ARTIST_PAGE_3_2.jpg",
+      "width": 305,
+      "height": 203,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RECOMENDATION_16_9.jpg",
+      "width": 100,
+      "height": 56,
+      "fallback": false
+    },
+    {
+      "ratio": "3_2",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_PORTRAIT_3_2.jpg",
+      "width": 640,
+      "height": 427,
+      "fallback": false
+    },
+    {
+      "ratio": "4_3",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_CUSTOM.jpg",
+      "width": 305,
+      "height": 225,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_EVENT_DETAIL_PAGE_16_9.jpg",
+      "width": 205,
+      "height": 115,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_PORTRAIT_16_9.jpg",
+      "width": 640,
+      "height": 360,
+      "fallback": false
+    },
+    {
+      "ratio": "3_2",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_3_2.jpg",
+      "width": 1024,
+      "height": 683,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_LARGE_16_9.jpg",
+      "width": 2048,
+      "height": 1152,
+      "fallback": false
+    },
+    {
+      "ratio": "16_9",
+      "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_LANDSCAPE_16_9.jpg",
+      "width": 1136,
+      "height": 639,
+      "fallback": false
+    }
+  ],
+  "sales": {
+    "public": {
+      "startDateTime": "1900-01-01T18:00:00Z",
+      "startTBD": false,
+      "startTBA": false,
+      "endDateTime": "2026-07-31T19:20:00Z"
+    }
+  },
+  "dates": {
+    "start": {
+      "localDate": "2026-07-31",
+      "localTime": "13:20:00",
+      "dateTime": "2026-07-31T18:20:00Z",
+      "dateTBD": false,
+      "dateTBA": false,
+      "timeTBA": false,
+      "noSpecificTime": false
+    },
+    "status": {
+      "code": "onsale"
+    },
+    "spanMultipleDays": false
+  },
+  "classifications": [
+    {
+      "primary": true,
+      "segment": {
+        "id": "KZFzniwnSyZfZ7v7nE",
+        "name": "Sports"
+      },
+      "genre": {
+        "id": "KnvZfZ7vAdv",
+        "name": "Baseball"
+      },
+      "subGenre": {
+        "id": "KZazBEonSMnZfZ7vF1n",
+        "name": "MLB"
+      },
+      "family": false
+    }
+  ],
+  "outlets": [
+    {
+      "url": "https://www.ticketmaster.com/event/Z7r9jZ1A7QFpF",
+      "type": "tmMarketPlace"
+    }
+  ],
+  "seatmap": {
+    "staticUrl": "https://content.resale.ticketmaster.com/graphics/TMResale/1/VenueMaps/1905-162-3-0-WrigleyFieldCubs.PNG"
+  },
+  "ticketing": {
+    "allInclusivePricing": {
+      "enabled": true
+    }
+  },
+  "nameOrigin": "custom",
+  "_links": {
+    "self": {
+      "href": "/discovery/v2/events/Z7r9jZ1A7QFpF?locale=en-us"
+    },
+    "attractions": [
+      {
+        "href": "/discovery/v2/attractions/K8vZ9171oAf?locale=en-us"
+      },
+      {
+        "href": "/discovery/v2/attractions/K8vZ9171okV?locale=en-us"
+      }
+    ],
+    "venues": [
+      {
+        "href": "/discovery/v2/venues/ZFr9jZe1vk?locale=en-us"
+      }
+    ]
+  },
+  "_embedded": {
+    "venues": [
+      {
+        "name": "Wrigley Field",
+        "type": "venue",
+        "id": "ZFr9jZe1vk",
+        "test": false,
+        "locale": "en-us",
+        "postalCode": "60613",
+        "timezone": "America/Chicago",
+        "city": {
+          "name": "Chicago"
+        },
+        "state": {
+          "name": "Illinois",
+          "stateCode": "IL"
+        },
+        "country": {
+          "name": "United States Of America",
+          "countryCode": "US"
+        },
+        "address": {
+          "line1": "1060 W Addison St"
+        },
+        "location": {
+          "longitude": "-87.660500000",
+          "latitude": "41.954102000"
+        },
+        "dmas": [
+          {
+            "id": 249
+          }
+        ],
+        "upcomingEvents": {
+          "tmr": 44,
+          "ticketmaster": 7,
+          "_total": 51,
+          "_filtered": 0
+        },
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/venues/ZFr9jZe1vk?locale=en-us"
+          }
+        }
+      }
+    ],
+    "attractions": [
+      {
+        "name": "Chicago Cubs",
+        "type": "attraction",
+        "id": "K8vZ9171oAf",
+        "test": false,
+        "url": "https://www.ticketmaster.com/chicago-cubs-tickets/artist/805915",
+        "locale": "en-us",
+        "externalLinks": {
+          "twitter": [
+            {
+              "url": "https://twitter.com/Cubs"
+            }
+          ],
+          "facebook": [
+            {
+              "url": "https://www.facebook.com/Cubs"
+            }
+          ],
+          "wiki": [
+            {
+              "url": "https://en.wikipedia.org/wiki/Chicago_Cubs"
+            }
+          ],
+          "instagram": [
+            {
+              "url": "https://www.instagram.com/cubs"
+            }
+          ],
+          "homepage": [
+            {
+              "url": "https://www.mlb.com/cubs"
+            }
+          ]
+        },
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_16_9.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_SOURCE",
+            "width": 2426,
+            "height": 1365,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_ARTIST_PAGE_3_2.jpg",
+            "width": 305,
+            "height": 203,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RECOMENDATION_16_9.jpg",
+            "width": 100,
+            "height": 56,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_PORTRAIT_3_2.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_CUSTOM.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_EVENT_DETAIL_PAGE_16_9.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_PORTRAIT_16_9.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_3_2.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_TABLET_LANDSCAPE_LARGE_16_9.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/121/dd00b610-772a-4bce-918a-8eb9a22b1121_RETINA_LANDSCAPE_16_9.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": false
+          }
+        ],
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nE",
+              "name": "Sports"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAdv",
+              "name": "Baseball"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vF1n",
+              "name": "MLB"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7l1",
+              "name": "Group"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7vA7d",
+              "name": "Team"
+            },
+            "family": false
+          }
+        ],
+        "upcomingEvents": {
+          "tmr": 67,
+          "ticketmaster": 15,
+          "_total": 82,
+          "_filtered": 0
+        },
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/attractions/K8vZ9171oAf?locale=en-us"
+          }
+        }
+      },
+      {
+        "name": "New York Yankees",
+        "type": "attraction",
+        "id": "K8vZ9171okV",
+        "test": false,
+        "url": "https://www.ticketmaster.com/new-york-yankees-tickets/artist/805992",
+        "locale": "en-us",
+        "externalLinks": {
+          "twitter": [
+            {
+              "url": "https://twitter.com/Yankees"
+            }
+          ],
+          "facebook": [
+            {
+              "url": "https://www.facebook.com/Yankees"
+            }
+          ],
+          "wiki": [
+            {
+              "url": "https://en.wikipedia.org/wiki/New_York_Yankees"
+            }
+          ],
+          "instagram": [
+            {
+              "url": "https://www.instagram.com/yankees"
+            }
+          ],
+          "homepage": [
+            {
+              "url": "https://www.mlb.com/yankees"
+            }
+          ]
+        },
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_TABLET_LANDSCAPE_LARGE_16_9.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_RECOMENDATION_16_9.jpg",
+            "width": 100,
+            "height": 56,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_SOURCE",
+            "width": 2426,
+            "height": 1365,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_EVENT_DETAIL_PAGE_16_9.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_RETINA_PORTRAIT_16_9.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_RETINA_LANDSCAPE_16_9.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_TABLET_LANDSCAPE_3_2.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_ARTIST_PAGE_3_2.jpg",
+            "width": 305,
+            "height": 203,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_RETINA_PORTRAIT_3_2.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_TABLET_LANDSCAPE_16_9.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/d18/a111a8b9-53e4-4497-9d2d-06b49a911d18_CUSTOM.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          }
+        ],
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nE",
+              "name": "Sports"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAdv",
+              "name": "Baseball"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vF1n",
+              "name": "MLB"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7l1",
+              "name": "Group"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7vA7d",
+              "name": "Team"
+            },
+            "family": false
+          }
+        ],
+        "upcomingEvents": {
+          "tmr": 25,
+          "ticketmaster": 502,
+          "_total": 527,
+          "_filtered": 0
+        },
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/attractions/K8vZ9171okV?locale=en-us"
+          }
+        }
+      }
+    ]
+  }
+}

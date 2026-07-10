@@ -1,0 +1,32 @@
+# Every source we pull events from. Edit this file by hand as you add sources.
+#
+# type: "api"     -> a real API like Ticketmaster, one base URL for every country
+# type: "scraper" -> a website we scrape; if the URL differs per country, list
+#                    each one under "urls"
+#
+# coverage: list of ISO country codes this source has events for,
+#           or the string "global" if it truly covers everywhere.
+
+sources:
+  - id: ticketmaster
+    type: api
+    coverage: "global"
+    entry_point: connectors.ticketing.ticketmaster.connector.TicketmasterConnector
+    notes: "Discovery API covers most countries — one base URL, country passed as a search param"
+
+
+  # --- examples to copy/replace as you find real scraper sources ---
+
+  # - id: example_france_only_site
+  #   type: scraper
+  #   coverage: ["FR"]
+  #   urls:
+  #     FR: "https://example.fr/events"
+
+  # - id: example_multi_country_site
+  #   type: scraper
+  #   coverage: ["FR", "BE", "CH"]
+  #   urls:
+  #     FR: "https://example.com/fr/events"
+  #     BE: "https://example.com/be/events"
+  #     CH: "https://example.com/ch/events"

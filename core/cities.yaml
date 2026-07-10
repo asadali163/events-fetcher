@@ -1,0 +1,10 @@
+# Maps a city name to its ISO country code, so we know which sources in
+# registry.yaml apply to it. Add a new line here any time you want to be
+# able to search a new city — nothing else needs to change for this step.
+
+cities:
+  Chicago: US
+  Paris: FR
+  London: GB
+  Toronto: CA
+

@@ -1,0 +1,6 @@
+id: ticketmaster
+type: api
+coverage: global
+entry_point: connectors.ticketing.ticketmaster.connector.TicketmasterConnector
+schedule: "every 6 hours"  # placeholder — not wired to a scheduler yet
+notes: "Discovery API — one base URL; city passed as a search param, coverage is effectively global"

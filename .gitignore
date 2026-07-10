@@ -1,0 +1,8 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+ticketmaster_normalized.json
+locations.db
+Prompt for Project Structure
+events_chicago.json
