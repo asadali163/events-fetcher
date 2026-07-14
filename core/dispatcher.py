@@ -11,6 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.cities_loader import get_country_for_city
+from core.raw_store import save_raw_event
 from core.registry_loader import get_sources_for_country
 
 
@@ -21,7 +22,7 @@ def load_connector(entry_point):
     return connector_class()
 
 
-def run_connector(source, city):
+def run_connector(source, city, country):
     events = []
 
     try:
@@ -31,12 +32,19 @@ def run_connector(source, city):
         return events
 
     try:
-        raw_events = connector.discover(city)
+        raw_events = connector.discover(city, country)
     except Exception as error:
         print(f"[{source['id']}] discover() failed, skipping: {error}")
         return events
 
     for raw_event in raw_events:
+        try:
+            save_raw_event(source["id"], city, country, raw_event)
+        except Exception as error:
+            print(
+                f"[{source['id']}] failed to save raw event, continuing anyway: {error}"
+            )
+
         try:
             detailed = connector.fetch(raw_event)
             normalized = connector.normalize(detailed)
@@ -57,12 +65,14 @@ def get_events_for_city(city):
     country = get_country_for_city(city)
     sources = get_sources_for_country(country)
 
-    print(f"{city} -> {country} -> {len(sources)} matching source(s): "
-          f"{', '.join(s['id'] for s in sources)}")
+    print(
+        f"{city} -> {country} -> {len(sources)} matching source(s): "
+        f"{', '.join(s['id'] for s in sources)}"
+    )
 
     all_events = []
     for source in sources:
-        source_events = run_connector(source, city)
+        source_events = run_connector(source, city, country)
         print(f"[{source['id']}] returned {len(source_events)} valid events")
         all_events.extend(source_events)
 

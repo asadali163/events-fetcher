@@ -1,0 +1,9 @@
+id: dice
+type: scraper
+coverage: ["FR"]
+entry_point: connectors.ticketing.dice.connector.DiceConnector
+notes: >
+  Dice.fm — Playwright browse-page scraper. Needs a per-city browse-page
+  slug (see CITY_SLUGS in connector.py); only Paris is mapped so far.
+  discover(city) will raise a clear error for any unmapped city, which the
+  dispatcher catches and skips without failing the whole run.

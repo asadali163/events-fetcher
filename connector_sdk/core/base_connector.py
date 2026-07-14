@@ -9,8 +9,12 @@ class BaseConnector(ABC):
     """
 
     @abstractmethod
-    def discover(self, city):
-        """Return a list of raw events for the given city."""
+    def discover(self, city, country):
+        """Return a list of raw events for the given city.
+        country (ISO code, e.g. "FR") disambiguates cities that share a name
+        across countries — pass it through to the source's query if it
+        supports filtering by country, even if this particular connector
+        doesn't need it yet."""
         raise NotImplementedError
 
     @abstractmethod

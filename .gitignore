@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 ticketmaster_normalized.json
 locations.db
+raw_events.db
+events_*.json
 Prompt for Project Structure
-events_chicago.json

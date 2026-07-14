@@ -14,6 +14,11 @@ sources:
     entry_point: connectors.ticketing.ticketmaster.connector.TicketmasterConnector
     notes: "Discovery API covers most countries — one base URL, country passed as a search param"
 
+  - id: dice
+    type: scraper
+    coverage: ["FR", "CA"]
+    entry_point: connectors.ticketing.dice.connector.DiceConnector
+    notes: "Playwright scraper — city-specific browse-page slug, only Paris mapped so far"
 
   # --- examples to copy/replace as you find real scraper sources ---
 

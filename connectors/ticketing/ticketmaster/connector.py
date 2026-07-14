@@ -38,7 +38,7 @@ class TicketmasterConnector(BaseConnector):
         end_str = end.strftime("%Y-%m-%dT%H:%M:%SZ")
         return start_str, end_str
 
-    def discover(self, city):
+    def discover(self, city, country):
         start_str, end_str = self._date_window()
         all_events = []
         page = 0
@@ -47,6 +47,7 @@ class TicketmasterConnector(BaseConnector):
             params = {
                 "apikey": self.api_key,
                 "city": city,
+                "countryCode": country,
                 "startDateTime": start_str,
                 "endDateTime": end_str,
                 "size": self.PAGE_SIZE,
