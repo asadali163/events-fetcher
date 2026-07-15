@@ -1,0 +1,233 @@
+[
+  {
+    "name": "BEAT",
+    "additional_info": "",
+    "location": "Barba Negra, Budapest, Hungary",
+    "date": "Wednesday 15 July 2026",
+    "time": "",
+    "genre": "",
+    "latitude": 47.44151,
+    "longitude": 19.07821,
+    "street_address": "Szállító utca 3"
+  },
+  {
+    "name": "Parno Graszt",
+    "additional_info": "Ham ko Ham",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Wednesday 15 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "Mehringer",
+    "additional_info": "BALKAN VIP",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Thursday 16 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "ALARM! (hardcore sweden)",
+    "additional_info": "",
+    "location": "RIFF, Budapest, Hungary",
+    "date": "Friday 17 July 2026",
+    "time": "",
+    "genre": "",
+    "latitude": 47.51328,
+    "longitude": 19.04855,
+    "street_address": "Szent István krt. 2"
+  },
+  {
+    "name": "Dogstar",
+    "additional_info": "",
+    "location": "Akvárium Klub, Budapest, Hungary",
+    "date": "Saturday 18 July 2026",
+    "time": "20:00:00+0200",
+    "genre": "",
+    "latitude": 47.49774,
+    "longitude": 19.0538,
+    "street_address": "Erzsébet tér 12"
+  },
+  {
+    "name": "Sex Pistols",
+    "additional_info": "Sex Pistols featuring Frank Carter, Frank Carter & the Sex Pistols, and The Damned",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Monday 20 July 2026",
+    "time": "",
+    "genre": "rock",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "Marilyn Manson",
+    "additional_info": "",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Wednesday 22 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "electronic | metal | rock",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "MEUTE",
+    "additional_info": "",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Thursday 23 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "electronic",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "Monolit Festival 2026",
+    "additional_info": "Elder, 1000mods, Naxatras, Abbie Falls, House Of Protection, Shell Beach, Red Swamp, and Warchief",
+    "location": "Dürer Kert, Budapest, Hungary",
+    "date": "Thursday 23 July 2026 – Friday 24 July 2026",
+    "time": "",
+    "genre": "rock | indie_alternative | metal",
+    "latitude": 47.4599,
+    "longitude": 19.05728,
+    "street_address": "Öböl utca 1"
+  },
+  {
+    "name": "Yngwie Malmsteen",
+    "additional_info": "",
+    "location": "MoMkult, Budapest, Hungary",
+    "date": "Friday 24 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "metal | rock",
+    "latitude": 47.49042,
+    "longitude": 19.01812,
+    "street_address": "Csörsz u. 18"
+  },
+  {
+    "name": "Piknik Park - Linkin Park Tribute Band",
+    "additional_info": "",
+    "location": "Akvárium Klub, Budapest, Hungary",
+    "date": "Friday 24 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.49774,
+    "longitude": 19.0538,
+    "street_address": "Erzsébet tér 12"
+  },
+  {
+    "name": "Marcelo Vasami",
+    "additional_info": "",
+    "location": "Akvárium Klub, Budapest, Hungary",
+    "date": "Friday 24 July 2026",
+    "time": "23:00:00+0200",
+    "genre": "",
+    "latitude": 47.49774,
+    "longitude": 19.0538,
+    "street_address": "Erzsébet tér 12"
+  },
+  {
+    "name": "Hárs Barna and Agócs Márton (Aurevoir)",
+    "additional_info": "Hárs Barna | Agócs Márton (Aurevoir)",
+    "location": "Tilos a Tilos, Budapest, Hungary",
+    "date": "Friday 24 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.49016,
+    "longitude": 19.06634,
+    "street_address": "Mikszáth Kálmán tér 2"
+  },
+  {
+    "name": "In Flames",
+    "additional_info": "Napalm Death, Bleed From Within, Unearth, and Employed To Serve",
+    "location": "Barba Negra, Budapest, Hungary",
+    "date": "Saturday 25 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "metal",
+    "latitude": 47.44151,
+    "longitude": 19.07821,
+    "street_address": "Szállító utca 3"
+  },
+  {
+    "name": "Biohazard and Pro-Pain",
+    "additional_info": "Death Angel, D.R.I., Don Gatto, Vio - Lence, Hemlock, and Sworn Enemy",
+    "location": "Barba Negra, Budapest, Hungary",
+    "date": "Sunday 26 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "metal",
+    "latitude": 47.44151,
+    "longitude": 19.07821,
+    "street_address": "Szállító utca 3"
+  },
+  {
+    "name": "The Last Mile",
+    "additional_info": "",
+    "location": "Gólya, Budapest, Hungary",
+    "date": "Sunday 26 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.4867,
+    "longitude": 19.09288,
+    "street_address": "Orczy út 46."
+  },
+  {
+    "name": "Charlie Puth",
+    "additional_info": "Bradley Simpson",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Monday 27 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "pop | funk_soul",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "Rita Ora",
+    "additional_info": "",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Wednesday 29 July 2026",
+    "time": "",
+    "genre": "pop | electronic | rock | r_and_b",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  },
+  {
+    "name": "Fekete Zaj 2026",
+    "additional_info": "This Will Destroy You, Savage, Alcest, Eivør, Front Line Assembly, Liturgy, Wolves In the Throne Room, and Immolation",
+    "location": "Fekete Zaj Fesztivál, Budapest, Hungary",
+    "date": "Wednesday 29 July 2026 – Saturday 01 August 2026",
+    "time": "",
+    "genre": "metal | electronic | indie_alternative | rock | hip_hop",
+    "latitude": 47.84442,
+    "longitude": 19.95828,
+    "street_address": "Mátra-Sástó, Mátrafüred, Hungary"
+  },
+  {
+    "name": "Panzerfaust",
+    "additional_info": "",
+    "location": "Dürer Kert, Budapest, Hungary",
+    "date": "Thursday 30 July 2026",
+    "time": "",
+    "genre": "",
+    "latitude": 47.4599,
+    "longitude": 19.05728,
+    "street_address": "Öböl utca 1"
+  },
+  {
+    "name": "Kiscsillag",
+    "additional_info": "4Bards",
+    "location": "Budapest Park, Budapest, Hungary",
+    "date": "Thursday 30 July 2026",
+    "time": "19:00:00+0200",
+    "genre": "",
+    "latitude": 47.46762,
+    "longitude": 19.07647,
+    "street_address": "Soroksári út 60."
+  }
+]

@@ -1,0 +1,11 @@
+id: songkick
+type: scraper
+coverage: ["HU", "FR"]
+entry_point: connectors.ticketing.songkick.connector.SongkickConnector
+notes: >
+  Songkick metro-area scraper — requests + BeautifulSoup, no browser needed
+  (listing pages embed full JSON-LD per event). Needs a per-city metro-area
+  path (see CITY_METRO_PATHS in connector.py); only Budapest mapped so far.
+  Uses the event's own URL from JSON-LD as its id when present, falling back
+  to a deterministic hash if not — verify against real scraped data whether
+  the URL actually comes through.

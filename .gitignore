@@ -5,5 +5,8 @@ __pycache__/
 ticketmaster_normalized.json
 locations.db
 raw_events.db
+refetch_log.db
+normalized_events.db
+canonical_events.db
 events_*.json
 Prompt for Project Structure

@@ -20,6 +20,12 @@ sources:
     entry_point: connectors.ticketing.dice.connector.DiceConnector
     notes: "Playwright scraper — city-specific browse-page slug, only Paris mapped so far"
 
+  - id: songkick
+    type: scraper
+    coverage: ["HU", "FR"]
+    entry_point: connectors.ticketing.songkick.connector.SongkickConnector
+    notes: "requests + BeautifulSoup scraper — city-specific metro-area path, only Budapest mapped so far"
+
   # --- examples to copy/replace as you find real scraper sources ---
 
   # - id: example_france_only_site

@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from connector_sdk.core.base_connector import BaseConnector
+from core.date_utils import split_iso_datetime
 from core.locations_store import save_location
 
 load_dotenv()
@@ -25,7 +26,7 @@ class TicketmasterConnector(BaseConnector):
     # it returns a 400 instead of an empty page, so we must stop before asking.
     MAX_ACCESSIBLE_RESULTS = 1000
 
-    REQUIRED_FIELDS = ["source_event_id", "event_name", "start_datetime"]
+    REQUIRED_FIELDS = ["source_event_id", "event_name", "date"]
 
     def __init__(self, api_key=None, days_ahead=30):
         self.api_key = api_key or os.environ["TICKETMASTER_API_KEY"]
@@ -89,11 +90,15 @@ class TicketmasterConnector(BaseConnector):
         classification = raw_event.get("classifications", [{}])[0]
         location = venue.get("location", {})
 
+        raw_datetime = raw_event.get("dates", {}).get("start", {}).get("dateTime")
+        date, time = split_iso_datetime(raw_datetime)
+
         normalized = {
             "source": "ticketmaster",
             "source_event_id": raw_event.get("id"),
             "event_name": raw_event.get("name"),
-            "start_datetime": raw_event.get("dates", {}).get("start", {}).get("dateTime"),
+            "date": date,
+            "time": time,
             "timezone": raw_event.get("dates", {}).get("timezone"),
             "status": raw_event.get("dates", {}).get("status", {}).get("code"),
             "venue_name": venue.get("name"),

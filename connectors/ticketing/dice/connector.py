@@ -1,6 +1,7 @@
+import re
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
@@ -12,6 +13,48 @@ from connector_sdk.core.base_connector import BaseConnector
 from core.geocoding import get_coordinates
 
 BASE_URL = "https://dice.fm"
+
+# Dice's own display format, e.g. "Mon 20 Jul, 7:15 pm CEST" — not a
+# standard format, so it gets its own parser here rather than living in the
+# shared core/date_utils.py. The time portion is optional; some listings
+# are date-only.
+_DICE_DATE_PATTERN = re.compile(
+    r"^(?P<weekday>\w+)\s+(?P<day>\d{1,2})\s+(?P<month>\w+)"
+    r"(?:,\s*(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*(?P<ampm>[ap]m)\s+(?P<tz>\w+))?$",
+    re.IGNORECASE,
+)
+
+
+def _split_dice_datetime(raw_value, reference_date=None):
+    """Split Dice's combined string into (date, time). No year is given, so
+    the current year is attached, rolling forward a year if that would land
+    in the past. Returns (None, "") if unparseable, and (date, "") if the
+    date parses but no time was given."""
+    if not raw_value:
+        return None, ""
+
+    match = _DICE_DATE_PATTERN.match(raw_value.strip())
+    if not match:
+        return None, ""
+
+    reference_date = reference_date or date.today()
+    month, day = match.group("month"), int(match.group("day"))
+    year = reference_date.year
+    try:
+        parsed_date = datetime.strptime(f"{month} {day} {year}", "%b %d %Y").date()
+    except ValueError:
+        return None, ""
+    if parsed_date < reference_date:
+        parsed_date = datetime.strptime(f"{month} {day} {year + 1}", "%b %d %Y").date()
+
+    if not match.group("hour"):
+        return parsed_date.isoformat(), ""
+
+    time_str = (
+        f"{match.group('hour')}:{match.group('minute')} "
+        f"{match.group('ampm').upper()} {match.group('tz')}"
+    )
+    return parsed_date.isoformat(), time_str
 
 # Dice.fm needs a specific browse-page slug per city — there's no reliable
 # way to derive one from a city name, so new cities get added here by hand.
@@ -35,7 +78,7 @@ SEL_HIGHLIGHTS = '[class*="EventDetailsBase__Highlight"]'
 
 class DiceConnector(BaseConnector):
     SOURCE = "dice"
-    REQUIRED_FIELDS = ["source_event_id", "event_name", "date_and_time"]
+    REQUIRED_FIELDS = ["source_event_id", "event_name", "date"]
 
     HEADLESS = True
     LOAD_MORE_PAUSE = 2.0
@@ -186,11 +229,14 @@ class DiceConnector(BaseConnector):
             source=self.SOURCE,
         )
 
+        event_date, event_time = _split_dice_datetime(raw_event.get("date_and_time"))
+
         return {
             "source": raw_event.get("source"),
             "source_event_id": raw_event.get("url"),
             "event_name": raw_event.get("title"),
-            "date_and_time": raw_event.get("date_and_time"),
+            "date": event_date,
+            "time": event_time,
             "venue_name": venue_name,
             "venue_address": venue_address,
             "venue_city": venue_city,
