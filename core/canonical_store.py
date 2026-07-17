@@ -11,10 +11,15 @@ def get_connection():
     return conn
 
 
+def _add_column_if_missing(conn, table, column, column_type):
+    existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+
+
 def init_db():
     conn = get_connection()
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS canonical_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             canonical_key TEXT UNIQUE NOT NULL,
@@ -22,18 +27,25 @@ def init_db():
             event_name TEXT,
             date TEXT,
             time TEXT,
+            end_date TEXT,
+            end_time TEXT,
             venue_name TEXT,
             venue_city TEXT,
             venue_country TEXT,
             venue_latitude REAL,
             venue_longitude REAL,
+            type TEXT,
             sources_json TEXT,
             canonical_json TEXT NOT NULL,
             first_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
             last_updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
-        """
-    )
+        """)
+    # See normalized_store.py's identical helper — CREATE TABLE IF NOT
+    # EXISTS won't add these to a database created before they existed.
+    _add_column_if_missing(conn, "canonical_events", "end_date", "TEXT")
+    _add_column_if_missing(conn, "canonical_events", "end_time", "TEXT")
+    _add_column_if_missing(conn, "canonical_events", "type", "TEXT")
     conn.commit()
     conn.close()
 
@@ -65,18 +77,22 @@ def save_canonical_event(city, merged_event):
     conn.execute(
         """
         INSERT INTO canonical_events (
-            canonical_key, city, event_name, date, time, venue_name, venue_city,
-            venue_country, venue_latitude, venue_longitude, sources_json, canonical_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            canonical_key, city, event_name, date, time, end_date, end_time,
+            venue_name, venue_city, venue_country, venue_latitude, venue_longitude,
+            type, sources_json, canonical_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(canonical_key) DO UPDATE SET
             event_name = excluded.event_name,
             date = excluded.date,
             time = excluded.time,
+            end_date = excluded.end_date,
+            end_time = excluded.end_time,
             venue_name = excluded.venue_name,
             venue_city = excluded.venue_city,
             venue_country = excluded.venue_country,
             venue_latitude = excluded.venue_latitude,
             venue_longitude = excluded.venue_longitude,
+            type = excluded.type,
             sources_json = excluded.sources_json,
             canonical_json = excluded.canonical_json,
             last_updated_at = CURRENT_TIMESTAMP
@@ -87,11 +103,14 @@ def save_canonical_event(city, merged_event):
             merged_event.get("event_name"),
             merged_event.get("date"),
             merged_event.get("time"),
+            merged_event.get("end_date"),
+            merged_event.get("end_time"),
             merged_event.get("venue_name"),
             merged_event.get("venue_city"),
             merged_event.get("venue_country"),
             merged_event.get("venue_latitude"),
             merged_event.get("venue_longitude"),
+            merged_event.get("type"),
             json.dumps(merged_event.get("sources", []), ensure_ascii=False),
             json.dumps(merged_event, ensure_ascii=False),
         ),
@@ -102,7 +121,9 @@ def save_canonical_event(city, merged_event):
 
 def get_all_entries():
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM canonical_events ORDER BY last_updated_at").fetchall()
+    rows = conn.execute(
+        "SELECT * FROM canonical_events ORDER BY last_updated_at"
+    ).fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
@@ -113,7 +134,17 @@ def print_all_entries():
         print("No entries yet.")
         return
 
-    columns = ["id", "city", "event_name", "date", "time", "venue_name", "last_updated_at"]
+    columns = [
+        "id",
+        "city",
+        "event_name",
+        "date",
+        "type",
+        "venue_name",
+        "last_updated_at",
+        "venue_latitude",
+        "venue_longitude",
+    ]
     widths = {c: max(len(c), max(len(str(e[c])) for e in entries)) for c in columns}
     header = "  ".join(c.ljust(widths[c]) for c in columns)
     print(header)

@@ -26,6 +26,8 @@ CITY_METRO_PATHS = {
     "Budapest": "/metro-areas/29047-hungary-budapest",
     "Paris": "metro-areas/28909-france-paris",
     "Lyon": "metro-areas/28889-france-lyon",
+    "Brussels": "metro-areas/182976-belgium-brussels",
+    "Toronto": "metro-areas/27396-canada-toronto",
 }
 
 # Deliberately not ";" — a semicolon is the list separator in many Excel
@@ -354,6 +356,8 @@ class SongkickConnector(BaseConnector):
         if event_date is None:
             event_date, event_time = split_iso_datetime(raw_event.get("start_date"))
 
+        genres = raw_event.get("genres") or []
+
         return {
             "source": self.SOURCE,
             "source_event_id": source_event_id,
@@ -366,7 +370,7 @@ class SongkickConnector(BaseConnector):
             "venue_country": venue_country,
             "venue_latitude": latitude,
             "venue_longitude": longitude,
-            "genres": raw_event.get("genres") or [],
+            "type": ", ".join(genres) if genres else None,
             "url": event_url,
         }
 

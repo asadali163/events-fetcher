@@ -14,7 +14,7 @@ which:
    Mostly unimplemented — it's where the system is headed once it needs to run at scale
    (Postgres/PostGIS, RabbitMQ, Airflow, Kubernetes...).
 2. **A working prototype** — real, running code that proves the core idea end to end with
-   three live sources before more are added. **This README documents layer 2 in full
+   five live sources before more are added. **This README documents layer 2 in full
    detail**, since that's what actually runs today.
 
 **Keep this file up to date.** Every time a new source is added, update the connectors
@@ -26,20 +26,25 @@ something on it gets resolved.
 ## Setup
 
 Requirements: Python 3.12+, a [Ticketmaster Developer](https://developer.ticketmaster.com/)
-API key, a [LocationIQ](https://locationiq.com) API key (free tier).
+API key, a [LocationIQ](https://locationiq.com) API key (free tier), an
+[OpenAgenda](https://developers.openagenda.com/) public key (free).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium   # only needed for Playwright-based scrapers (Dice)
+playwright install chromium   # needed for Playwright-based scrapers (Dice, Bandsintown)
 ```
 
 Create a `.env` file in the project root (not committed — see `.gitignore`):
 ```
 TICKETMASTER_API_KEY=your_real_key_here
 LOCATIONIQ_API_KEY=your_real_key_here
+OPENAGENDA_PUBLIC_KEY=your_real_key_here
 ```
+
+Bandsintown additionally needs a one-time **manual** login before it can return more than
+the first page of results — see its row in the sources table below.
 
 Run the whole flow for a city:
 ```bash
@@ -55,10 +60,15 @@ python core/dispatcher.py Paris 15       # forces a 15-day window across every s
 |---|---|---|---|---|
 | [Ticketmaster](connectors/ticketing/ticketmaster/) | ticketing | API | `global` | Discovery API, paginated, capped at 1,000 results/query |
 | [Dice](connectors/ticketing/dice/) | ticketing | scraper (Playwright) | FR, CA | Browser session shared across the whole run; per-city browse-page slug |
-| [Songkick](connectors/ticketing/songkick/) | ticketing | scraper (requests + BeautifulSoup) | HU, FR | No browser needed — JSON-LD embedded in listing pages gives full detail |
+| [Songkick](connectors/ticketing/songkick/) | ticketing | scraper (requests + BeautifulSoup) | HU, FR, BE, CA | No browser needed — JSON-LD embedded in listing pages gives full detail |
+| [OpenAgenda](connectors/ticketing/openagenda/) | ticketing | API | FR | Searches agendas (calendars/publishers) by city name, then events per agenda via a geo bounding box; needs a per-city center point |
+| [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Playwright) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
 
 Cities currently mapped in `core/cities.yaml`: Chicago, Paris, London, Toronto, Lyon,
-Budapest.
+Budapest, Brussels. Note each Playwright/API connector also keeps its *own* city→id
+mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`) — a
+city must be in **both** `cities.yaml` and a given connector's own mapping for that
+connector to actually cover it.
 
 ---
 
@@ -89,9 +99,18 @@ GetEvents/
 │   ├── dice/
 │   │   ├── connector.yaml / connector.py     DiceConnector
 │   │   └── scraper.py                        original prototype, kept for reference
-│   └── songkick/
-│       ├── connector.yaml / connector.py     SongkickConnector
-│       └── scrapper_test.py                  original prototype, kept for reference
+│   ├── songkick/
+│   │   ├── connector.yaml / connector.py     SongkickConnector
+│   │   └── scrapper_test.py                  original prototype, kept for reference
+│   ├── openagenda/
+│   │   ├── connector.yaml / connector.py     OpenAgendaConnector
+│   │   └── openagenda_test.py                original prototype, kept for reference
+│   └── bandsintown/
+│       ├── connector.yaml / connector.py     BandsintownConnector
+│       ├── login.py                          manual, interactive — (re-)establishes bit_profile/
+│       ├── bit_profile/                      gitignored — saved logged-in browser profile
+│       ├── debug_snapshots/                  gitignored — screenshots/HTML saved when scraping returns 0 events
+│       └── scraper_test.py                   original reference script, kept for reference
 │
 ├── .env                                      API keys (not committed)
 ├── .gitignore
@@ -109,7 +128,7 @@ is the target-architecture skeleton from `ARCHITECTURE.md` and isn't wired up ye
 
 | Stage | Status |
 |---|---|
-| Connector | ✅ Done — 3 sources |
+| Connector | ✅ Done — 5 sources |
 | Raw Event Storage | ✅ Done — `raw_store.py` |
 | Normalizer | ⚠️ Logic exists per-connector, not yet a separate queue-driven stage (deliberate — see below) |
 | Deduplicator | ⚠️ Done, but scoped to *within one dispatcher run* — see `core/dedup.py` |
@@ -163,7 +182,7 @@ are logged back to the refetch log regardless.
 
 **5. Deduplicate across all sources.** Once every source has run, `dedup.deduplicate_events()`
 groups the full combined list into clusters where **all three** signals agree: same date,
-venues within ~150m of each other, and similar-enough event names (see `core/dedup.py`).
+venues within ~50m of each other, and similar-enough event names (see `core/dedup.py`).
 Each cluster merges into one record (the most complete source's version, with a `sources`
 list recording every contributor for traceability).
 
@@ -201,8 +220,9 @@ comparable across sources — this is what deduplication's date-matching signal 
 `core/dedup.py` — see `deduplicate_events()`. Key things worth knowing:
 
 - **All three signals must agree**, not any one alone: same `date`, venues within
-  `DISTANCE_THRESHOLD_METERS` (currently 50m) via `haversine_meters()`, and event names
-  scoring above `NAME_SIMILARITY_THRESHOLD` (currently 0.6) via `difflib.SequenceMatcher`.
+  `DISTANCE_THRESHOLD_METERS` (currently 50m — tightened down from an initial 150m) via
+  `haversine_meters()`, and event names scoring above `NAME_SIMILARITY_THRESHOLD` (currently
+  0.6) via `difflib.SequenceMatcher`.
 - **Clustering uses union-find**, not a single linear pass — so if A matches B and B matches
   C, all three end up in one cluster even if A and C don't directly match each other, and the
   result doesn't depend on input order.
@@ -230,6 +250,16 @@ consistent between runs, but it won't catch a reworded title next week. True cro
 matching would need to reuse `dedup.py`'s matching logic against the gold table itself — not
 built yet.
 
+**Schema migrations so far**: `end_date`/`end_time` and `type` were added to the silver and
+gold tables after the fact. Both stores' `init_db()` includes a small `_add_column_if_missing()`
+migration, so an existing database gets the new columns without losing rows — but you still
+need to actually run `python core/normalized_store.py` and `python core/canonical_store.py`
+once after pulling a schema change, since the dispatcher never calls `init_db()` itself.
+`type` is only populated by sources that actually have genre/category data (Ticketmaster,
+Songkick, OpenAgenda) — Dice and Bandsintown leave it `None`, matching "only if present."
+`end_date`/`end_time` are currently only populated by OpenAgenda (its `nextTiming`/`firstTiming`
+blocks have a real `end`); the others leave them `None` rather than guess.
+
 ---
 
 ## The locations cache, in detail
@@ -249,6 +279,45 @@ coordinates) or, in the future, a `city` (mapping to a country — not populated
 
 ---
 
+## Bandsintown, in detail
+
+This connector is meaningfully more involved than the other four, for reasons worth
+understanding before touching it:
+
+- **Requires a one-time manual login.** Bandsintown gates its full "View all" result list
+  behind a login wall. `login.py` (in this connector's folder) is a separate, interactive
+  script you run **yourself, by hand** — never called by the dispatcher — that opens a real
+  visible browser, lets you log in once, and saves the session into `bit_profile/`
+  (gitignored, treat it like a password). Without it, `discover()` degrades gracefully to
+  only the first page of results rather than failing outright.
+- **The listing card alone isn't reliable.** Its "artist before the date, venue after the
+  date" text-walking heuristic works for plain concert cards, but festival-type listings can
+  show the festival or artist name where a venue would normally be, and it never gives
+  coordinates at all. So `discover()` also **visits every individual event's own page**,
+  extracting a structured location block (venue name, street address, city, and exact
+  lat/long — pulled straight out of a `latitude=`/`longitude=` query string on that page's
+  city link, no geocoding call needed when this succeeds). `normalize()` prefers this
+  precise data and only falls back to the listing card's guess if a specific event's page
+  didn't yield it.
+- **This is done inside `discover()`, not `fetch()`**, using several tabs at once
+  (`DETAIL_TAB_COUNT`, currently 5) in the same already-open browser context — `goto()` with
+  `wait_until="commit"` returns almost immediately, so kicking off navigation on every tab in
+  a batch before collecting any of them lets the browser load them all in the background
+  concurrently, without threads or a second browser instance (which would also conflict with
+  `bit_profile/` being locked by the first one).
+- **Known open issue**: running with `HEADLESS = True` has returned 0 events even when the
+  same city works fine with a visible browser — the classic signature of a site treating
+  headless Chrome differently (a bot-check page, a blocked request, or a different login
+  behavior). `_save_debug_snapshot()` captures a screenshot + the page's HTML whenever this
+  happens, into `debug_snapshots/` (gitignored), to diagnose from evidence instead of
+  guessing. Not yet resolved — check there first if this comes up again.
+- **`robots.txt` disallows the `/choose-dates/` listing path this scraper uses.** This is a
+  deliberate, acknowledged tradeoff (see `connector.yaml`'s notes), not an oversight — worth
+  keeping in mind given this connector also now hits many additional individual event pages
+  per run on top of that.
+
+---
+
 ## How to add a new source (do this yourself, keep this section current)
 
 1. **Get access first.** Sign up for the API, or open the site in a browser and look at real
@@ -260,18 +329,27 @@ coordinates) or, in the future, a `city` (mapping to a country — not populated
    (`connector_sdk/core/base_connector.py`), implementing:
    - `discover(city, country)` — fetch/scrape raw events. If the source needs a shared
      browser/session for the whole run (like Dice), do the *entire* scrape here and make
-     `fetch()` a passthrough.
+     `fetch()` a passthrough. If the listing itself isn't reliable enough and each event
+     needs its own page visited for accurate detail (like Bandsintown), do that inside
+     `discover()` too — several tabs at once in the same context if there are many events,
+     using `goto(..., wait_until="commit")` to kick off navigation on each before collecting
+     any of them, rather than a fresh browser per event.
    - `fetch(raw_event)` — a second per-event call, only if `discover()` doesn't already give
-     full detail.
+     full detail and per-event visits aren't already handled above.
    - `normalize(raw_event)` — map onto the common fields (`source`, `source_event_id`,
      `event_name`, `date`, `time`, `venue_name`, `venue_city`, `venue_country`,
-     `venue_latitude`, `venue_longitude`, `url`). For dates: reuse
-     `core.date_utils.split_iso_datetime()` if the source is ISO 8601, otherwise write a
-     small private parser next to this connector. For coordinates: use `core.geocoding.get_coordinates()`
-     if the source doesn't supply its own; if it does, still call `core.locations_store.save_location()`
-     directly to cache them for reuse.
+     `venue_latitude`, `venue_longitude`, `url`, and optionally `type`/`end_date`/`end_time`
+     when the source actually provides them — leave absent otherwise, never guess). For
+     dates: reuse `core.date_utils.split_iso_datetime()` if the source is ISO 8601, otherwise
+     write a small private parser next to this connector. For coordinates: use
+     `core.geocoding.get_coordinates()` if the source doesn't supply its own; if it does,
+     still call `core.locations_store.save_location()` directly to cache them for reuse.
    - `validate(normalized_event)` — check `REQUIRED_FIELDS` (typically
      `["source_event_id", "event_name", "date"]`) are present.
+   - If the source requires a login, keep the interactive part **completely separate** from
+     `discover()` — a manual script (see `bandsintown/login.py`) the user runs by hand once,
+     never something the dispatcher triggers. `discover()` should check whether a saved
+     session exists and degrade gracefully (fewer results, not a crash) if it doesn't.
 5. **Write `connector.yaml`** — `id`, `type` (`api`/`scraper`), `coverage` (list of ISO
    country codes, or `"global"`), `entry_point` (the dotted class path).
 6. **Register it in `core/registry.yaml`** — same `id`/`type`/`coverage`/`entry_point`.
@@ -290,8 +368,16 @@ coordinates) or, in the future, a `city` (mapping to a country — not populated
   redundant `discover()` calls, but doesn't feed into deduplication decisions.
 - **No retry/backoff on transient failures** (rate limits, timeouts) — a failed request is
   logged and skipped, not retried.
-- **Only a handful of cities/sources exist.** Dice and Songkick each only know a few cities
-  (see their `CITY_SLUGS`/`CITY_METRO_PATHS`); most of the world isn't covered yet.
+- **Only a handful of cities/sources exist.** Each Playwright/API connector only knows a few
+  cities (see their own `CITY_SLUGS`/`CITY_METRO_PATHS`/`CITY_COORDINATES`/`CITY_GEONAME_IDS`);
+  most of the world isn't covered yet.
+- **`type`/`end_date`/`end_time` are only populated where a source actually provides them** —
+  they're `None` for the rest, by design, not a bug (see the storage-model section above).
+- **Bandsintown headless mode currently returns 0 events**, while headed (visible browser)
+  works — unresolved as of now. `_save_debug_snapshot()` captures evidence for this in
+  `debug_snapshots/` when it happens; diagnose from that before guessing at a fix.
+- **Bandsintown knowingly operates outside `robots.txt`'s stated preference** for its listing
+  path — an acknowledged tradeoff, not an oversight (see "Bandsintown, in detail" above).
 - **Not yet wired into the target architecture** in `ARCHITECTURE.md` — no Airflow
   scheduling, no RabbitMQ messaging, no Postgres/PostGIS, no API layer. This prototype exists
   specifically to validate the approach before that investment.
@@ -303,7 +389,7 @@ coordinates) or, in the future, a `city` (mapping to a country — not populated
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the full target DDD architecture and how it's
   meant to scale to 1000+ connectors and millions of events.
 - [`docs/How_GetEvents_Works.pdf`](./docs/How_GetEvents_Works.pdf) — a plain-English
-  walkthrough of the pipeline concept, no code. Predates the current 3-source/dedup state —
+  walkthrough of the pipeline concept, no code. Predates the current 5-source/dedup state —
   treat specifics as dated.
 - [`docs/GetEvents_Project_Status.pdf`](./docs/GetEvents_Project_Status.pdf) — a status and
   roadmap briefing. Also predates the current state.

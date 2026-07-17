@@ -106,7 +106,7 @@ class TicketmasterConnector(BaseConnector):
             "venue_country": venue.get("country", {}).get("name"),
             "venue_latitude": self._to_float(location.get("latitude")),
             "venue_longitude": self._to_float(location.get("longitude")),
-            "category": classification.get("segment", {}).get("name"),
+            "type": classification.get("segment", {}).get("name"),
             "url": raw_event.get("url"),
         }
 

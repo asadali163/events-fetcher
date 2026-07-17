@@ -1,0 +1,11 @@
+id: openagenda
+type: api
+coverage: ["FR"]
+entry_point: connectors.ticketing.openagenda.connector.OpenAgendaConnector
+notes: >
+  OpenAgenda API v2 — searches agendas (event calendars/publishers) by city
+  name, then fetches events per agenda within a geo bounding box + date
+  window. Needs a per-city center point (see CITY_COORDINATES in
+  connector.py); only Paris and Lyon mapped so far. Coverage is mostly
+  France, possibly wider Europe — expand `coverage` here once tested
+  against non-French cities. No Americas coverage.

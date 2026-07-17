@@ -22,9 +22,21 @@ sources:
 
   - id: songkick
     type: scraper
-    coverage: ["HU", "FR"]
+    coverage: ["HU", "FR", "BE", "CA"]
     entry_point: connectors.ticketing.songkick.connector.SongkickConnector
     notes: "requests + BeautifulSoup scraper — city-specific metro-area path, only Budapest mapped so far"
+
+  - id: openagenda
+    type: api
+    coverage: ["FR"]
+    entry_point: connectors.ticketing.openagenda.connector.OpenAgendaConnector
+    notes: "Agenda search by city + geo bounding box — city-specific center point, only Paris and Lyon mapped so far"
+
+  - id: bandsintown
+    type: scraper
+    coverage: ["FR", "GB", "US", "CA", "BE"]
+    entry_point: connectors.ticketing.bandsintown.connector.BandsintownConnector
+    notes: "Playwright scraper — needs a one-time manual login (see login.py in its folder); degrades to first-page-only results without a saved session"
 
   # --- examples to copy/replace as you find real scraper sources ---
 

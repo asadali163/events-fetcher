@@ -1,0 +1,13 @@
+id: bandsintown
+type: scraper
+coverage: ["FR", "GB", "US", "CA", "BE"]
+entry_point: connectors.ticketing.bandsintown.connector.BandsintownConnector
+notes: >
+  Playwright scraper, anchors on href pattern (/e/) and text shape rather
+  than CSS classes (Bandsintown's class names are build hashes that change
+  on every deploy). Full result list requires a logged-in session — see
+  login.py in this folder, run manually, never part of the automated
+  pipeline. Without a saved session, discover() degrades gracefully to
+  only the first page of results rather than failing. Note: Bandsintown's
+  robots.txt disallows the /choose-dates/ path this scraper uses — a
+  deliberate, acknowledged tradeoff, not an oversight.

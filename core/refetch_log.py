@@ -100,5 +100,5 @@ def delete_all_entries():
 
 if __name__ == "__main__":
     init_db()
-    # print_all_entries()
-    delete_all_entries()
+    print_all_entries()
+    # delete_all_entries()

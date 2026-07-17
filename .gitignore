@@ -10,3 +10,6 @@ normalized_events.db
 canonical_events.db
 events_*.json
 Prompt for Project Structure
+auth.json
+bit_profile/
+debug_snapshots/
