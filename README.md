@@ -14,7 +14,7 @@ which:
    Mostly unimplemented — it's where the system is headed once it needs to run at scale
    (Postgres/PostGIS, RabbitMQ, Airflow, Kubernetes...).
 2. **A working prototype** — real, running code that proves the core idea end to end with
-   five live sources before more are added. **This README documents layer 2 in full
+   six live sources before more are added. **This README documents layer 2 in full
    detail**, since that's what actually runs today.
 
 **Keep this file up to date.** Every time a new source is added, update the connectors
@@ -33,7 +33,9 @@ API key, a [LocationIQ](https://locationiq.com) API key (free tier), an
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium   # needed for Playwright-based scrapers (Dice, Bandsintown)
+playwright install chromium   # needed for Playwright-based scrapers (Dice, Meetup)
+# Bandsintown runs on Selenium + undetected-chromedriver instead (see its README) —
+# undetected-chromedriver drives your real installed Chrome, no separate browser install needed.
 ```
 
 Create a `.env` file in the project root (not committed — see `.gitignore`):
@@ -62,12 +64,14 @@ python core/dispatcher.py Paris 15       # forces a 15-day window across every s
 | [Dice](connectors/ticketing/dice/) | ticketing | scraper (Playwright) | FR, CA | Browser session shared across the whole run; per-city browse-page slug |
 | [Songkick](connectors/ticketing/songkick/) | ticketing | scraper (requests + BeautifulSoup) | HU, FR, BE, CA | No browser needed — JSON-LD embedded in listing pages gives full detail |
 | [OpenAgenda](connectors/ticketing/openagenda/) | ticketing | API | FR | Searches agendas (calendars/publishers) by city name, then events per agenda via a geo bounding box; needs a per-city center point |
-| [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Playwright) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
+| [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Selenium + undetected-chromedriver) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
+| [Meetup](connectors/ticketing/meetup/) | ticketing | scraper (Playwright) | FR | Deliberately scoped to 50+ attendee events only; no date-range filter, so it refetches on a 10-day timer instead of a window; knowingly operates outside `robots.txt`'s stated preference for `/find/` |
 
 Cities currently mapped in `core/cities.yaml`: Chicago, Paris, London, Toronto, Lyon,
 Budapest, Brussels. Note each Playwright/API connector also keeps its *own* city→id
-mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`) — a
-city must be in **both** `cities.yaml` and a given connector's own mapping for that
+mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`,
+`CITY_LOCATION_SLUGS`) — a city must be in **both** `cities.yaml` and a given connector's
+own mapping for that
 connector to actually cover it.
 
 ---
@@ -91,7 +95,8 @@ GetEvents/
 │
 ├── connector_sdk/core/base_connector.py      BaseConnector — the contract every connector follows
 │
-├── connectors/ticketing/
+├── connectors/ticketing/    each folder also has its own README.md — connector-specific
+│   │                        details (how to add a city, quirks, known issues)
 │   ├── ticketmaster/
 │   │   ├── connector.yaml / connector.py     TicketmasterConnector
 │   │   ├── ticketmaster_test.py              original prototype, kept for reference
@@ -105,11 +110,14 @@ GetEvents/
 │   ├── openagenda/
 │   │   ├── connector.yaml / connector.py     OpenAgendaConnector
 │   │   └── openagenda_test.py                original prototype, kept for reference
-│   └── bandsintown/
-│       ├── connector.yaml / connector.py     BandsintownConnector
-│       ├── login.py                          manual, interactive — (re-)establishes bit_profile/
-│       ├── bit_profile/                      gitignored — saved logged-in browser profile
-│       ├── debug_snapshots/                  gitignored — screenshots/HTML saved when scraping returns 0 events
+│   ├── bandsintown/
+│   │   ├── connector.yaml / connector.py     BandsintownConnector
+│   │   ├── login.py                          manual, interactive — (re-)establishes bit_profile/
+│   │   ├── bit_profile/                      gitignored — saved logged-in browser profile
+│   │   ├── debug_snapshots/                  gitignored — screenshots/HTML saved when scraping returns 0 events
+│   │   └── scraper_test.py                   original reference script, kept for reference
+│   └── meetup/
+│       ├── connector.yaml / connector.py     MeetupConnector
 │       └── scraper_test.py                   original reference script, kept for reference
 │
 ├── .env                                      API keys (not committed)
@@ -128,7 +136,7 @@ is the target-architecture skeleton from `ARCHITECTURE.md` and isn't wired up ye
 
 | Stage | Status |
 |---|---|
-| Connector | ✅ Done — 5 sources |
+| Connector | ✅ Done — 6 sources |
 | Raw Event Storage | ✅ Done — `raw_store.py` |
 | Normalizer | ⚠️ Logic exists per-connector, not yet a separate queue-driven stage (deliberate — see below) |
 | Deduplicator | ⚠️ Done, but scoped to *within one dispatcher run* — see `core/dedup.py` |
@@ -299,18 +307,23 @@ understanding before touching it:
   city link, no geocoding call needed when this succeeds). `normalize()` prefers this
   precise data and only falls back to the listing card's guess if a specific event's page
   didn't yield it.
-- **This is done inside `discover()`, not `fetch()`**, using several tabs at once
-  (`DETAIL_TAB_COUNT`, currently 5) in the same already-open browser context — `goto()` with
-  `wait_until="commit"` returns almost immediately, so kicking off navigation on every tab in
-  a batch before collecting any of them lets the browser load them all in the background
-  concurrently, without threads or a second browser instance (which would also conflict with
-  `bit_profile/` being locked by the first one).
-- **Known open issue**: running with `HEADLESS = True` has returned 0 events even when the
-  same city works fine with a visible browser — the classic signature of a site treating
-  headless Chrome differently (a bot-check page, a blocked request, or a different login
-  behavior). `_save_debug_snapshot()` captures a screenshot + the page's HTML whenever this
-  happens, into `debug_snapshots/` (gitignored), to diagnose from evidence instead of
-  guessing. Not yet resolved — check there first if this comes up again.
+- **This is done inside `discover()`, not `fetch()`**, one tab, one event at a time. It used
+  to run 5 tabs concurrently (`goto()` with `wait_until="commit"` returns almost immediately,
+  so kicking off navigation on every tab in a batch before collecting any of them let the
+  browser load them all in the background at once) — reverted to sequential while debugging
+  the Cloudflare issue below, to isolate request velocity as a variable.
+- **This connector runs on Selenium + undetected-chromedriver, not Playwright.** Cloudflare
+  was hard-blocking the whole domain, and eventually blocked even a completely fresh,
+  human-driven `login.py` session in headed mode — while the same URL loaded fine in a normal
+  browser tab on the same machine/IP. That combination meant it wasn't an IP-reputation issue
+  at all, but Cloudflare detecting the Playwright/CDP automation connection itself, which no
+  amount of JS-level patching (custom `navigator.webdriver` overrides, then
+  [patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python)) could fix, since
+  the whole Playwright family shares that same control channel. Switching to
+  [undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)
+  (a different automation stack, patched at the chromedriver-binary level) was the next
+  thing tried — see `connectors/ticketing/bandsintown/README.md` for the full timeline and
+  current status.
 - **`robots.txt` disallows the `/choose-dates/` listing path this scraper uses.** This is a
   deliberate, acknowledged tradeoff (see `connector.yaml`'s notes), not an oversight — worth
   keeping in mind given this connector also now hits many additional individual event pages
@@ -373,11 +386,22 @@ understanding before touching it:
   most of the world isn't covered yet.
 - **`type`/`end_date`/`end_time` are only populated where a source actually provides them** —
   they're `None` for the rest, by design, not a bug (see the storage-model section above).
-- **Bandsintown headless mode currently returns 0 events**, while headed (visible browser)
-  works — unresolved as of now. `_save_debug_snapshot()` captures evidence for this in
-  `debug_snapshots/` when it happens; diagnose from that before guessing at a fix.
+- **Bandsintown was being hard-blocked by Cloudflare regardless of headless/headed mode**,
+  even for a fresh manual `login.py` session — traced to Cloudflare detecting the
+  Playwright/CDP automation connection itself, not an IP or fingerprint issue. Now runs on
+  Selenium + undetected-chromedriver instead; not yet confirmed working (see "Bandsintown, in
+  detail" above). `_save_debug_snapshot()` still captures evidence in `debug_snapshots/` when
+  a run returns suspiciously few/zero events.
 - **Bandsintown knowingly operates outside `robots.txt`'s stated preference** for its listing
   path — an acknowledged tradeoff, not an oversight (see "Bandsintown, in detail" above).
+- **Meetup has no date-range filter, so it refetches on a timer instead of a window** — no
+  confirmed date-range filter was found on its find page, so `days_ahead` is always forced to
+  `None` and the dispatcher instead skips re-running for a city until
+  `REFETCH_INTERVAL_DAYS` (10, placeholder) days have passed since its last successful fetch.
+  Also **deliberately scoped to 50+ attendee events only** — both are documented in
+  `connectors/ticketing/meetup/README.md`, not oversights.
+- **Meetup also knowingly operates outside `robots.txt`'s stated preference** for `/find/` —
+  same acknowledged tradeoff category as Bandsintown.
 - **Not yet wired into the target architecture** in `ARCHITECTURE.md` — no Airflow
   scheduling, no RabbitMQ messaging, no Postgres/PostGIS, no API layer. This prototype exists
   specifically to validate the approach before that investment.

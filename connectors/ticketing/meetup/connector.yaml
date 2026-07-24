@@ -1,0 +1,17 @@
+id: meetup
+type: scraper
+coverage: ["FR"]
+entry_point: connectors.ticketing.meetup.connector.MeetupConnector
+notes: >
+  Playwright scraper. Deliberately scoped to 50+ attendee events only (via
+  Meetup's "Filter by size" dropdown, applied twice: 50-100 and 100+) —
+  smaller meetups are out of scope on purpose, not a gap to fix. No
+  confirmed date-range filter exists in this implementation, so days_ahead
+  is always forced to None and the dispatcher instead refetches on a
+  timer (REFETCH_INTERVAL_DAYS = 10, see connector.py) — skips re-running
+  for a city until that many days have passed since the last successful
+  fetch, rather than comparing date windows. Needs a per-city location
+  slug (see CITY_LOCATION_SLUGS in connector.py); only Paris mapped so
+  far. Meetup's robots.txt disallows automated access to /find/ — a
+  deliberate, acknowledged tradeoff, not an oversight (same category as
+  Bandsintown).

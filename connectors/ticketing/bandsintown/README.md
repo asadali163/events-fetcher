@@ -1,7 +1,7 @@
 # Bandsintown connector
 
-**Type:** scraper (Playwright) · **Coverage:** FR, GB, US, CA, BE · **Auth:** manual,
-one-time login required (see below)
+**Type:** scraper (Selenium + undetected-chromedriver) · **Coverage:** FR, GB, US, CA, BE ·
+**Auth:** manual, one-time login required (see below)
 
 The most involved connector in the project. Start with the "Bandsintown, in detail" section
 of the root `README.md` for the full story; this file focuses specifically on how to extend
@@ -23,7 +23,7 @@ and operate it day to day.
        "Toronto": ("6167865", "CA"),
        "Brussels": ("2800866", "BE"),
        "Lyon": ("2996944", "FR"),
-       "NewCity": ("geoname_id", "XX"),
+       # "NewCity": ("geoname_id", "XX"),
    }
    ```
 3. Make sure the city is also in `core/cities.yaml` and its country is listed in this
@@ -58,13 +58,18 @@ it's interactive by nature and has to stay that way.
   href pattern rather than any CSS class, since Bandsintown's classes are build hashes that
   change every deploy). `normalize()` prefers this precise data, falling back to the listing
   card's guess only if a specific event's page didn't yield it.
-- **This runs inside `discover()`, not `fetch()`**, using `DETAIL_TAB_COUNT` (5) tabs at once
-  in the same already-open browser context. The trick: `goto(url, wait_until="commit")`
-  returns almost immediately (navigation started, not finished), so kicking off navigation on
-  every tab in a batch before collecting any of them lets the browser load them all
-  concurrently in the background — same total requests as one-at-a-time, far less wall-clock
-  waiting. No threads, no second browser instance (which would conflict with `bit_profile/`
-  being locked by the first one).
+- **This runs inside `discover()`, not `fetch()`**, reusing the same single browser tab
+  already open for the listing page — visits each event page one at a time via
+  `driver.get(url)`. This used to run 5 Playwright tabs concurrently (via
+  `goto(url, wait_until="commit")`, which returns almost immediately so several tabs could be
+  kicked off before collecting any of them), but that was reverted to a single sequential tab
+  while debugging the Cloudflare blocking below — see that section for why, and for why this
+  connector no longer uses Playwright at all.
+- **JS snippets (`EXTRACT_JS`, `DATES_JS`, `EVENT_LOCATION_JS`) are unchanged** from the
+  Playwright version — they're plain `() => {...}` arrow functions. A small `_evaluate()`
+  helper runs them via Selenium's `driver.execute_script(f"return ({js})();")`, which is the
+  plain-JS equivalent of Playwright's `page.evaluate(arrowFn)`, so none of the extraction
+  logic itself needed to change, only how it's invoked.
 - **`venue_country` comes from the event page's own city text** (e.g.
   `"Herk-de-stad, Belgium"` → country `"Belgium"`), falling back to the search country only
   if the detail page didn't yield one — this correctly handles events that turn out to be in
@@ -85,6 +90,27 @@ it's interactive by nature and has to stay that way.
   suspiciously few/zero events — check there first before investigating further. **Remember
   to flip `HEADLESS` back to `True` once this is resolved** — it's currently left visible
   specifically for debugging this issue.
+- **Cloudflare was hard-blocking the whole domain** ("Sorry, you have been blocked") and
+  sometimes showing an interactive "Attention Required" / "verify you are human" challenge —
+  even in headed mode, even for a completely fresh, human-driven `login.py` session with no
+  scraping behavior at all. Meanwhile the exact same URL opened in a normal, non-automated
+  browser tab on the same machine/IP loaded fine every time. That combination ruled out IP
+  reputation entirely: the block was specifically about the **Playwright-controlled browser
+  connection itself** — Cloudflare's bot-management was detecting the CDP (Chrome DevTools
+  Protocol) remote-control channel Playwright uses, not anything JS-visible. Two mitigations
+  were tried first and both failed: patching `navigator.webdriver` and related JS properties
+  via an init script, then switching to [patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python)
+  (a maintained Playwright fork that patches CDP-level leaks) — still blocked, on a fresh
+  `login.py` session, in headed mode, with a single tab. Since the whole Playwright family
+  shares the same fundamental CDP-based control channel, no amount of patching within that
+  family was going to fix this.
+  **Current fix: this connector (and `login.py`) now run on Selenium +
+  [undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)**
+  instead — a different automation stack built specifically to evade this class of detection
+  by patching the actual chromedriver binary, not just JS-level properties. Requires
+  `pip install selenium undetected-chromedriver` (added to `requirements.txt`). **Status: not
+  yet confirmed working** — test this the same way (`login.py` first, then the dispatcher) and
+  update this note with the result.
 - **`robots.txt` disallows `/choose-dates/`**, the listing path this scraper uses. This is a
   deliberate, acknowledged tradeoff (see `connector.yaml`'s notes) — not an oversight, but
   worth remembering given this connector now also hits many individual event pages per run

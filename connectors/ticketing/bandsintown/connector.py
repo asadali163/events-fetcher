@@ -262,8 +262,7 @@ class BandsintownConnector(BaseConnector):
     MAX_SCROLLS = 400
     STALL_LIMIT = 4
     SCROLL_DELAY = 1.2
-    DETAIL_PAGE_DELAY = 1.0  # politeness pause between batches of event-page visits
-    DETAIL_TAB_COUNT = 5  # tabs kept in flight at once when visiting event pages
+    DETAIL_PAGE_DELAY = 1.0  # politeness pause between event-page visits
 
     def __init__(self, days_ahead=7):
         self.days_ahead = days_ahead
@@ -502,57 +501,32 @@ class BandsintownConnector(BaseConnector):
         # Dice: a fresh browser per event would be far too slow.
         print(
             f"[bandsintown] visiting {len(events)} event pages for precise venue/location "
-            f"({self.DETAIL_TAB_COUNT} tabs at a time)..."
+            "(single tab, one at a time)..."
         )
-        self._fetch_event_locations(ctx, events)
+        self._fetch_event_locations(page, events)
 
         return events
 
-    def _fetch_event_locations(self, ctx, events):
-        """Visit every event's own page for its precise location block,
-        using several tabs at once. The trick that makes this genuinely
-        concurrent without threads or a second browser instance: goto()
-        with wait_until="commit" returns almost immediately (navigation
-        started, not finished), so kicking it off on every tab in a batch
-        before collecting any of them lets the browser load all of them in
-        the background at the same time — same total requests as visiting
-        one at a time, just far less wall-clock waiting."""
-        tabs = [
-            ctx.new_page() for _ in range(min(self.DETAIL_TAB_COUNT, len(events)) or 1)
-        ]
-        try:
-            for batch_start in range(0, len(events), len(tabs)):
-                batch = events[batch_start : batch_start + len(tabs)]
+    def _fetch_event_locations(self, page, events):
+        """Visit every event's own page for its precise location block, one
+        at a time, reusing the same tab already used for the listing page —
+        one browser, one page, doing all the work sequentially."""
+        for i, event in enumerate(events, 1):
+            try:
+                page.goto(event["href"], wait_until="domcontentloaded", timeout=30_000)
+                page.wait_for_selector('a[href*="latitude="]', timeout=15_000)
+                page.wait_for_timeout(300)
+                location = page.evaluate(EVENT_LOCATION_JS)
+                if location:
+                    event.update(location)
+            except PWTimeout:
+                pass  # no location block on this page — normalize() falls back
+            except Exception as error:
+                print(f"[bandsintown] failed to read {event['href']}: {error}")
 
-                for tab, event in zip(tabs, batch):
-                    try:
-                        tab.goto(event["href"], wait_until="commit", timeout=30_000)
-                    except Exception as error:
-                        print(
-                            f"[bandsintown] failed to start loading {event['href']}: {error}"
-                        )
-
-                for tab, event in zip(tabs, batch):
-                    try:
-                        tab.wait_for_selector('a[href*="latitude="]', timeout=15_000)
-                        tab.wait_for_timeout(300)
-                        location = tab.evaluate(EVENT_LOCATION_JS)
-                        if location:
-                            event.update(location)
-                    except PWTimeout:
-                        pass  # no location block on this page — normalize() falls back
-                    except Exception as error:
-                        print(f"[bandsintown] failed to read {event['href']}: {error}")
-
-                done = batch_start + len(batch)
-                print(f"[bandsintown]   {done}/{len(events)} event pages visited")
-                time.sleep(self.DETAIL_PAGE_DELAY)
-        finally:
-            for tab in tabs:
-                try:
-                    tab.close()
-                except Exception:
-                    pass
+            if i % 20 == 0:
+                print(f"[bandsintown]   {i}/{len(events)} event pages visited")
+            time.sleep(self.DETAIL_PAGE_DELAY)
 
     def fetch(self, raw_event):
         # The listing card's text nodes already give everything needed —

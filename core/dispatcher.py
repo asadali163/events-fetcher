@@ -16,7 +16,7 @@ from core.cities_loader import get_country_for_city
 from core.dedup import deduplicate_events
 from core.normalized_store import save_normalized_event
 from core.raw_store import save_raw_event
-from core.refetch_log import is_covered, log_fetch
+from core.refetch_log import is_covered, is_recently_fetched, log_fetch
 from core.registry_loader import get_sources_for_country
 
 
@@ -45,7 +45,9 @@ def run_connector(source, city, country, days_ahead=None):
     # enforces, so fall back to "always run" if a future connector doesn't
     # set it, rather than crashing.
     effective_days_ahead = getattr(connector, "days_ahead", None)
+    refetch_interval_days = getattr(connector, "REFETCH_INTERVAL_DAYS", None)
     window_start = window_end = None
+
     if effective_days_ahead is not None:
         window_start = date.today().isoformat()
         window_end = (date.today() + timedelta(days=effective_days_ahead - 1)).isoformat()
@@ -56,6 +58,18 @@ def run_connector(source, city, country, days_ahead=None):
                 f"({window_start} to {window_end}) — skipping"
             )
             return events
+
+    elif refetch_interval_days is not None:
+        # No real date-range filter (e.g. Meetup) — window containment
+        # doesn't apply, so instead skip if we already succeeded within the
+        # last refetch_interval_days days.
+        if is_recently_fetched(source["id"], city, refetch_interval_days):
+            print(
+                f"[{source['id']}] fetched within the last {refetch_interval_days} "
+                f"day(s) — skipping"
+            )
+            return events
+        window_start = window_end = date.today().isoformat()
 
     try:
         raw_events = connector.discover(city, country)

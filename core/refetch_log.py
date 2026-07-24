@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "refetch_log.db"
@@ -40,6 +41,27 @@ def is_covered(source, city, window_start, window_end):
           AND window_start <= ? AND window_end >= ?
         """,
         (source, city, window_start, window_end),
+    ).fetchone()
+    conn.close()
+    return row[0] > 0
+
+
+def is_recently_fetched(source, city, interval_days):
+    """True if this source+city had a successful fetch within the last
+    interval_days days. For sources with no real date-range filter (e.g.
+    Meetup), 'covers window X' doesn't mean anything, so instead of window
+    containment we just avoid re-running too soon after the last success."""
+    conn = get_connection()
+    cutoff = (datetime.utcnow() - timedelta(days=interval_days)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    row = conn.execute(
+        """
+        SELECT COUNT(*) FROM fetch_log
+        WHERE source = ? AND city = ? AND status = 'success'
+          AND run_at >= ?
+        """,
+        (source, city, cutoff),
     ).fetchone()
     conn.close()
     return row[0] > 0

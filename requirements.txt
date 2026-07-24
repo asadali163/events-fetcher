@@ -5,3 +5,7 @@ playwright
 chromium
 beautifulsoup4
 cloudscraper
+selenium
+undetected-chromedriver
+packaging
+lxml

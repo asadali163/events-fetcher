@@ -36,7 +36,13 @@ sources:
     type: scraper
     coverage: ["FR", "GB", "US", "CA", "BE"]
     entry_point: connectors.ticketing.bandsintown.connector.BandsintownConnector
-    notes: "Playwright scraper — needs a one-time manual login (see login.py in its folder); degrades to first-page-only results without a saved session"
+    notes: "Selenium + undetected-chromedriver scraper (switched from Playwright — Cloudflare was detecting the Playwright/CDP connection itself); needs a one-time manual login (see login.py in its folder); degrades to first-page-only results without a saved session"
+
+  - id: meetup
+    type: scraper
+    coverage: ["FR"]
+    entry_point: connectors.ticketing.meetup.connector.MeetupConnector
+    notes: "Playwright scraper — 50+ attendee events only (deliberate); no date-range filter, so refetches on a 10-day timer instead of a date window (REFETCH_INTERVAL_DAYS); only Paris mapped so far"
 
   # --- examples to copy/replace as you find real scraper sources ---
 

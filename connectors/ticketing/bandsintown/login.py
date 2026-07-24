@@ -96,7 +96,9 @@ def main():
         if is_logged_in(page):
             print(f"\nLogged in — session saved to {PROFILE_DIR}")
         else:
-            print("\nWARNING: still seeing 'Log In' — it may not have taken. Try again.")
+            print(
+                "\nWARNING: still seeing 'Log In' — it may not have taken. Try again."
+            )
 
         ctx.close()
     return 0
