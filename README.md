@@ -66,7 +66,7 @@ python core/dispatcher.py Paris 15       # forces a 15-day window across every s
 | [OpenAgenda](connectors/ticketing/openagenda/) | ticketing | API | FR | Searches agendas (calendars/publishers) by city name, then events per agenda via a geo bounding box; needs a per-city center point |
 | [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Selenium + undetected-chromedriver) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
 | [Meetup](connectors/ticketing/meetup/) | ticketing | scraper (Playwright) | FR | Deliberately scoped to 50+ attendee events only; no date-range filter, so it refetches on a 10-day timer instead of a window; knowingly operates outside `robots.txt`'s stated preference for `/find/` |
-| [Universe](connectors/ticketing/universe/) | ticketing | scraper (Playwright + BeautifulSoup) | NL | No server-side date filter and results aren't chronologically ordered, so `days_ahead` is enforced client-side; venue location resolved via `core.geocoding.geocode_place()`, which trusts the geocoder's own city/country over the searched city |
+| [Universe](connectors/ticketing/universe/) | ticketing | scraper (Playwright + BeautifulSoup) | NL, BE, CA (only Amsterdam mapped so far) | No date filter at all — `discover()` returns everything found, and `days_ahead` is forced to `None`; refetches on a 10-day timer instead (`REFETCH_INTERVAL_DAYS`), same pattern as Meetup; venue location resolved via `core.geocoding.geocode_place()`, which trusts the geocoder's own city/country over the searched city |
 
 Cities currently mapped in `core/cities.yaml`: Chicago, Paris, London, Toronto, Lyon,
 Budapest, Brussels, Amsterdam. Note each Playwright/API connector also keeps its *own*
@@ -414,11 +414,11 @@ understanding before touching it:
   `connectors/ticketing/meetup/README.md`, not oversights.
 - **Meetup also knowingly operates outside `robots.txt`'s stated preference** for `/find/` —
   same acknowledged tradeoff category as Bandsintown.
-- **Universe has no server-side date filter either, and its results aren't chronologically
-  ordered** — unlike Meetup, this doesn't make `days_ahead` inert: every page (up to
-  `MAX_PAGES`) is scanned and the window is enforced client-side per event instead, since
-  early-exit-on-date isn't safe when results interleave out of order. Documented in
-  `connectors/ticketing/universe/README.md`.
+- **Universe has no date filtering at all, by design** — `discover()` returns every event
+  it finds (results aren't even chronologically ordered, so a partial client-side filter
+  wouldn't be safe anyway) and `days_ahead` is forced to `None`, same as Meetup. Also
+  refetches on a 10-day timer (`REFETCH_INTERVAL_DAYS`) instead of a date window, same
+  reasoning as Meetup. Documented in `connectors/ticketing/universe/README.md`.
 - **Not yet wired into the target architecture** in `ARCHITECTURE.md` — no Airflow
   scheduling, no RabbitMQ messaging, no Postgres/PostGIS, no API layer. This prototype exists
   specifically to validate the approach before that investment.

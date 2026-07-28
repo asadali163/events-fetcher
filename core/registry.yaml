@@ -48,7 +48,7 @@ sources:
     type: scraper
     coverage: ["NL", "BE", "CA"]
     entry_point: connectors.ticketing.universe.connector.UniverseConnector
-    notes: "Playwright + BeautifulSoup scraper — city-specific center point for search, only Amsterdam mapped so far; no server-side date filter, days_ahead enforced client-side; venue location resolved via reverse-geocoding the scraped address, not the searched city"
+    notes: "Playwright + BeautifulSoup scraper — city-specific center point for search, only Amsterdam mapped so far; no date filter at all (days_ahead forced to None), refetches on a 10-day timer instead (REFETCH_INTERVAL_DAYS), same pattern as Meetup; venue location resolved via reverse-geocoding the scraped address, not the searched city"
 
   # --- examples to copy/replace as you find real scraper sources ---
 

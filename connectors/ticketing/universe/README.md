@@ -1,6 +1,7 @@
 # Universe connector
 
-**Type:** scraper (Playwright + BeautifulSoup) · **Coverage:** NL · **Auth:** none
+**Type:** scraper (Playwright + BeautifulSoup) · **Coverage:** NL, BE, CA (per
+`core/registry.yaml`; only Amsterdam is actually mapped so far — see below) · **Auth:** none
 
 Scrapes Universe.com's `/explore` search page. One browser session per `discover()`
 call — loads page 1, reads the reported total page count, then pages through up to
@@ -25,13 +26,20 @@ Currently mapped: Amsterdam.
 
 ## Key implementation details
 
-- **No server-side date-range filter exists on this search** — the explore page's URL
-  only takes `query=`, `loc=`, `ll=`, and `page=` params, no date bounds. Worse, results
-  are **not chronologically ordered** (verified against real scraped output — August and
-  October dates interleave across cards), so pagination can't stop early once results run
-  past the requested window. `discover()` scans every page up to `MAX_PAGES` and enforces
-  `days_ahead` itself, client-side, by comparing each card's parsed `start_date` against
-  the requested window before keeping it.
+- **No date-range filtering at all — `discover()` returns everything it finds**, same as
+  the reference `scraper_test.py`. The explore page's URL only takes `query=`, `loc=`,
+  `ll=`, and `page=` params, no date bounds, and results aren't chronologically ordered
+  (verified against real scraped output — August and October dates interleave across
+  cards). An earlier version of this connector filtered client-side by `days_ahead`, but
+  that was deliberately removed — some sources just don't need a date filter, per explicit
+  direction, rather than defaulting to one.
+- **`days_ahead` is always forced to `None`** in `__init__` (same pattern as
+  `MeetupConnector`), so the dispatcher's window-containment refetch check never applies
+  here — it wouldn't mean anything for a source that returns everything regardless of
+  window. Instead, `REFETCH_INTERVAL_DAYS = 10` makes the dispatcher skip re-running for a
+  city until that many days have passed since its last successful fetch (via
+  `core.refetch_log.is_recently_fetched()`), avoiding duplicate raw/normalized rows from
+  repeated runs.
 - **The search URL is double-URL-encoded.** Universe's own search UI encodes the `loc=`
   and `ll=` values twice (verified against a real explore URL) — `_build_url()` applies
   `urllib.parse.quote()` twice to reproduce this exactly. If a new city's search ever

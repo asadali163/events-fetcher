@@ -1,16 +1,17 @@
 id: universe
 type: scraper
-coverage: ["NL", "CA", "CA"]
+coverage: ["NL", "BE", "CA"]
 entry_point: connectors.ticketing.universe.connector.UniverseConnector
 notes: >
   Playwright + BeautifulSoup scraper for Universe.com's "explore" search.
   Needs a per-city center point for the search URL's ll= param (see
   CITY_COORDINATES in connector.py); only Amsterdam mapped so far. No
-  server-side date-range filter exists on this search, and results are
-  not chronologically ordered, so every page (up to MAX_PAGES) gets
-  scanned and days_ahead is enforced client-side per event instead.
-  Venue text from the listing card is a full address blob, not a clean
-  venue name — geocoded as-is via core.geocoding.geocode_place(), which
-  also resolves the true city/country from the geocoder's own answer
-  rather than trusting the searched city (verified necessary: a Haarlem
-  event appeared under an Amsterdam-area search in real scraped data).
+  date filtering at all — discover() returns everything it finds
+  (results aren't chronologically ordered anyway), and days_ahead is
+  forced to None. Refetches on a 10-day timer instead
+  (REFETCH_INTERVAL_DAYS), same pattern as Meetup. Venue text from the
+  listing card is a full address blob, not a clean venue name — geocoded
+  as-is via core.geocoding.geocode_place(), which also resolves the true
+  city/country from the geocoder's own answer rather than trusting the
+  searched city (verified necessary: a Haarlem event appeared under an
+  Amsterdam-area search in real scraped data).
