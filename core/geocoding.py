@@ -37,34 +37,94 @@ def get_coordinates(address, name, city=None, country=None, source="geocoded"):
     if not address:
         return None, None
 
-    latitude, longitude = _geocode_address(address)
-    if latitude is None or longitude is None:
+    result = _geocode(address)
+    if not result:
+        return None, None
+    try:
+        latitude, longitude = float(result["lat"]), float(result["lon"])
+    except (KeyError, TypeError, ValueError):
         return None, None
 
     save_location("venue", name, city, country, latitude, longitude, source=source)
     return latitude, longitude
 
 
-def _geocode_address(address):
+def geocode_place(address, name=None, source="geocoded"):
+    """
+    Like get_coordinates(), but for sources that give a single full address
+    blob with no separately known city/country (e.g. Universe.com's scraped
+    location text, or a sports venue address) — geocodes the address and
+    returns the city/country the geocoder itself resolved, rather than
+    trusting whatever city was searched for. That distinction matters:
+    a search for one city can still return events actually located in a
+    neighboring city (seen in practice with both Bandsintown and Universe),
+    so the geocoder's own answer is more trustworthy than the search input.
+
+    Caches under the raw address text itself (city/country aren't known
+    until after geocoding, so they can't be part of the cache key the way
+    get_coordinates() uses them).
+
+    Returns (latitude, longitude, city, country); any of these may be None.
+    """
+    cache_key_name = name or address
+    cached = get_location("venue", cache_key_name, None, None)
+    if cached and cached.get("latitude") is not None and cached.get("longitude") is not None:
+        return (
+            cached["latitude"],
+            cached["longitude"],
+            cached.get("city"),
+            cached.get("country"),
+        )
+
+    if not address:
+        return None, None, None, None
+
+    result = _geocode(address)
+    if not result:
+        return None, None, None, None
+    try:
+        latitude, longitude = float(result["lat"]), float(result["lon"])
+    except (KeyError, TypeError, ValueError):
+        return None, None, None, None
+
+    components = result.get("address", {})
+    city = (
+        components.get("city")
+        or components.get("town")
+        or components.get("village")
+        or components.get("municipality")
+        or components.get("county")
+    )
+    country = components.get("country")
+
+    save_location("venue", cache_key_name, city, country, latitude, longitude, source=source)
+    return latitude, longitude, city, country
+
+
+def _geocode(address):
+    """Runs the actual LocationIQ lookup and returns its first raw result
+    dict (with addressdetails), or None. Shared by get_coordinates() (which
+    only needs lat/lon) and geocode_place() (which also needs the
+    structured address components)."""
     try:
         response = requests.get(
             LOCATIONIQ_URL,
-            params={"key": LOCATIONIQ_API_KEY, "q": address, "format": "json", "limit": 1},
+            params={
+                "key": LOCATIONIQ_API_KEY,
+                "q": address,
+                "format": "json",
+                "limit": 1,
+                "addressdetails": 1,
+            },
             timeout=10,
         )
         response.raise_for_status()
         results = response.json()
     except Exception as error:
         print(f"[geocoding] request failed for '{address}': {error}")
-        return None, None
+        return None
     finally:
         # Stay under the free tier's rate limit regardless of outcome.
         time.sleep(REQUEST_DELAY_SECONDS)
 
-    if not results:
-        return None, None
-
-    try:
-        return float(results[0]["lat"]), float(results[0]["lon"])
-    except (KeyError, TypeError, ValueError):
-        return None, None
+    return results[0] if results else None

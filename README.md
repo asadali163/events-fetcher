@@ -14,7 +14,7 @@ which:
    Mostly unimplemented — it's where the system is headed once it needs to run at scale
    (Postgres/PostGIS, RabbitMQ, Airflow, Kubernetes...).
 2. **A working prototype** — real, running code that proves the core idea end to end with
-   six live sources before more are added. **This README documents layer 2 in full
+   seven live sources before more are added. **This README documents layer 2 in full
    detail**, since that's what actually runs today.
 
 **Keep this file up to date.** Every time a new source is added, update the connectors
@@ -66,10 +66,11 @@ python core/dispatcher.py Paris 15       # forces a 15-day window across every s
 | [OpenAgenda](connectors/ticketing/openagenda/) | ticketing | API | FR | Searches agendas (calendars/publishers) by city name, then events per agenda via a geo bounding box; needs a per-city center point |
 | [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Selenium + undetected-chromedriver) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
 | [Meetup](connectors/ticketing/meetup/) | ticketing | scraper (Playwright) | FR | Deliberately scoped to 50+ attendee events only; no date-range filter, so it refetches on a 10-day timer instead of a window; knowingly operates outside `robots.txt`'s stated preference for `/find/` |
+| [Universe](connectors/ticketing/universe/) | ticketing | scraper (Playwright + BeautifulSoup) | NL | No server-side date filter and results aren't chronologically ordered, so `days_ahead` is enforced client-side; venue location resolved via `core.geocoding.geocode_place()`, which trusts the geocoder's own city/country over the searched city |
 
 Cities currently mapped in `core/cities.yaml`: Chicago, Paris, London, Toronto, Lyon,
-Budapest, Brussels. Note each Playwright/API connector also keeps its *own* city→id
-mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`,
+Budapest, Brussels, Amsterdam. Note each Playwright/API connector also keeps its *own*
+city→id mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`,
 `CITY_LOCATION_SLUGS`) — a city must be in **both** `cities.yaml` and a given connector's
 own mapping for that
 connector to actually cover it.
@@ -116,8 +117,11 @@ GetEvents/
 │   │   ├── bit_profile/                      gitignored — saved logged-in browser profile
 │   │   ├── debug_snapshots/                  gitignored — screenshots/HTML saved when scraping returns 0 events
 │   │   └── scraper_test.py                   original reference script, kept for reference
-│   └── meetup/
-│       ├── connector.yaml / connector.py     MeetupConnector
+│   ├── meetup/
+│   │   ├── connector.yaml / connector.py     MeetupConnector
+│   │   └── scraper_test.py                   original reference script, kept for reference
+│   └── universe/
+│       ├── connector.yaml / connector.py     UniverseConnector
 │       └── scraper_test.py                   original reference script, kept for reference
 │
 ├── .env                                      API keys (not committed)
@@ -136,7 +140,7 @@ is the target-architecture skeleton from `ARCHITECTURE.md` and isn't wired up ye
 
 | Stage | Status |
 |---|---|
-| Connector | ✅ Done — 6 sources |
+| Connector | ✅ Done — 7 sources |
 | Raw Event Storage | ✅ Done — `raw_store.py` |
 | Normalizer | ⚠️ Logic exists per-connector, not yet a separate queue-driven stage (deliberate — see below) |
 | Deduplicator | ⚠️ Done, but scoped to *within one dispatcher run* — see `core/dedup.py` |
@@ -284,6 +288,14 @@ coordinates) or, in the future, a `city` (mapping to a country — not populated
   first, and only call the LocationIQ API on a genuine miss, then save the result. Used by
   any connector whose source doesn't supply coordinates directly (Dice, Songkick when
   JSON-LD lacks geo data).
+- **`geocode_place(address, name)`** (added for Universe) is a second entry point for
+  sources that give one full address blob with no separately known city/country — instead
+  of trusting the searched city, it returns whatever city/country LocationIQ itself
+  resolves for that address (via `addressdetails=1`). This matters: Universe's explore
+  search isn't confined to the literal searched city (an event scraped under an
+  Amsterdam-area search actually listed a Haarlem address), the same lesson learned from
+  Bandsintown's Brussels/Tomorrowland case. `get_coordinates()` is unchanged for every
+  other connector; this is a separate function, not a modification to the existing one.
 
 ---
 
@@ -402,6 +414,11 @@ understanding before touching it:
   `connectors/ticketing/meetup/README.md`, not oversights.
 - **Meetup also knowingly operates outside `robots.txt`'s stated preference** for `/find/` —
   same acknowledged tradeoff category as Bandsintown.
+- **Universe has no server-side date filter either, and its results aren't chronologically
+  ordered** — unlike Meetup, this doesn't make `days_ahead` inert: every page (up to
+  `MAX_PAGES`) is scanned and the window is enforced client-side per event instead, since
+  early-exit-on-date isn't safe when results interleave out of order. Documented in
+  `connectors/ticketing/universe/README.md`.
 - **Not yet wired into the target architecture** in `ARCHITECTURE.md` — no Airflow
   scheduling, no RabbitMQ messaging, no Postgres/PostGIS, no API layer. This prototype exists
   specifically to validate the approach before that investment.

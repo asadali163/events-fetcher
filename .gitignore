@@ -13,3 +13,12 @@ Prompt for Project Structure
 auth.json
 bit_profile/
 debug_snapshots/
+
+# Any .json/.csv sitting directly in the project root — per-connector
+# scraper_test.py output dumps (e.g. universe_events.json, espn_events.csv)
+# and the dispatcher's events_<city>.json. The leading "/" anchors this to
+# the root only, so fixtures/data files inside subfolders (e.g.
+# connectors/ticketing/ticketmaster/tests/fixtures/) are unaffected.
+/*.json
+/*.csv
+/*.ipynb

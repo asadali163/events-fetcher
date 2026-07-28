@@ -44,6 +44,12 @@ sources:
     entry_point: connectors.ticketing.meetup.connector.MeetupConnector
     notes: "Playwright scraper — 50+ attendee events only (deliberate); no date-range filter, so refetches on a 10-day timer instead of a date window (REFETCH_INTERVAL_DAYS); only Paris mapped so far"
 
+  - id: universe
+    type: scraper
+    coverage: ["NL", "BE", "CA"]
+    entry_point: connectors.ticketing.universe.connector.UniverseConnector
+    notes: "Playwright + BeautifulSoup scraper — city-specific center point for search, only Amsterdam mapped so far; no server-side date filter, days_ahead enforced client-side; venue location resolved via reverse-geocoding the scraped address, not the searched city"
+
   # --- examples to copy/replace as you find real scraper sources ---
 
   # - id: example_france_only_site
