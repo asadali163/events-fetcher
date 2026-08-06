@@ -1,0 +1,16 @@
+id: stubhub
+type: scraper
+coverage: ["FR", "HU", "BE", "NL", "CA", "LU"]
+entry_point: connectors.ticketing.stubhub.connector.StubHubConnector
+notes: >
+  Playwright + BeautifulSoup scraper for StubHub's "explore" search.
+  Genuinely supports server-side date-range filtering (from/to epoch-ms
+  params), unlike Meetup/Universe, so days_ahead works the normal way
+  (window-containment refetch check applies). Needs a per-city
+  (lat, lon, IANA timezone) tuple for the search URL and correct day
+  boundaries — see CITY_SEARCH_PARAMS in connector.py; only Paris mapped
+  so far. Venue text is a bare name with no street address, so a distance
+  sanity check (MAX_VENUE_DISTANCE_METERS) discards any geocoded match
+  that lands implausibly far from the searched city's own center —
+  verified necessary: "Olympic Aquatics Centre" once geocoded to a coastal
+  town 400+ km from Paris.

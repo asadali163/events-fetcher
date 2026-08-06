@@ -9,3 +9,4 @@ selenium
 undetected-chromedriver
 packaging
 lxml
+pandas

@@ -50,6 +50,12 @@ sources:
     entry_point: connectors.ticketing.universe.connector.UniverseConnector
     notes: "Playwright + BeautifulSoup scraper — city-specific center point for search, only Amsterdam mapped so far; no date filter at all (days_ahead forced to None), refetches on a 10-day timer instead (REFETCH_INTERVAL_DAYS), same pattern as Meetup; venue location resolved via reverse-geocoding the scraped address, not the searched city"
 
+  - id: stubhub
+    type: scraper
+    coverage: ["FR", "BE", "CA", "NL", "HU", "LU"]
+    entry_point: connectors.ticketing.stubhub.connector.StubHubConnector
+    notes: "Playwright + BeautifulSoup scraper — genuinely supports server-side date-range filtering (from/to), so days_ahead works normally, unlike Meetup/Universe; needs a per-city (lat, lon, timezone) tuple, only Paris mapped so far; bare venue names are geocoded with a distance sanity check against the city center, since a name alone can match the wrong place entirely"
+
   # --- examples to copy/replace as you find real scraper sources ---
 
   # - id: example_france_only_site
