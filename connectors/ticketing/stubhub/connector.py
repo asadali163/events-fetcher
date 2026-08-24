@@ -55,6 +55,22 @@ _DATE_HINT = re.compile(
 _PRICE_HINT = re.compile(r"[€$£]\s?\d")
 
 
+def _url_matches_city(url, city):
+    """Loose sanity check, not authoritative — does any word of the
+    searched city name appear in the event's own URL slug? StubHub's URLs
+    reliably name the real city (verified in practice, e.g.
+    '.../nicolas-guillemot-paris-tickets-...'), so this catches cases where
+    the page served isn't really scoped to the searched city at all (seen
+    in practice: an entire run's worth of "Paris" results whose URLs were
+    all named after US cities instead). A legitimate venue/suburb name
+    might not literally contain the city word, so this is only used as a
+    batch-level warning signal, never to silently drop individual events."""
+    if not url:
+        return True  # no evidence against it
+    url_lower = url.lower()
+    return any(word in url_lower for word in re.findall(r"[a-z]+", city.lower()))
+
+
 def _b64(value):
     return base64.b64encode(value.encode()).decode()
 
@@ -132,12 +148,19 @@ def _parse_events(html):
         ]
 
         date_text = next((t for t in candidates if _looks_like_date(t)), None)
-        venue = next((t for t in candidates if t != date_text), None)
-        if date_text is None and len(candidates) >= 1:
-            date_text = candidates[0]
-            venue = venue or (candidates[1] if len(candidates) > 1 else None)
-
+        # Found before venue selection, and excluded from it below — the
+        # reference scraper picked "venue" as simply the first non-date
+        # candidate, which sometimes grabbed the price text instead when it
+        # happened to appear before the real venue line in the card's DOM
+        # order (verified in practice: "From $151" ending up as venue_name).
         price = next((t for t in candidates if _PRICE_HINT.search(t)), None)
+        venue = next(
+            (t for t in candidates if t != date_text and t != price), None
+        )
+        if date_text is None and len(candidates) >= 1:
+            non_price = [t for t in candidates if t != price]
+            date_text = non_price[0] if non_price else candidates[0]
+            venue = venue or (non_price[1] if len(non_price) > 1 else None)
 
         img = card.find("img") if card else None
         image_url = img.get("src") if img else None
@@ -292,6 +315,28 @@ class StubHubConnector(BaseConnector):
 
         return clicks
 
+    def _save_debug_snapshot(self, page, label):
+        """Diagnostic — saves what the page actually looked like, so a
+        wrong-content run (bot detection, a generic/national fallback
+        listing instead of the geo-filtered explore results, a changed
+        layout) can be seen instead of guessed at."""
+        debug_dir = Path(__file__).parent / "debug_snapshots"
+        debug_dir.mkdir(exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        screenshot_path = debug_dir / f"{label}_{stamp}.png"
+        html_path = debug_dir / f"{label}_{stamp}.html"
+        try:
+            page.screenshot(path=str(screenshot_path), full_page=True)
+        except Exception as error:
+            print(f"[stubhub] could not save screenshot: {error}")
+        try:
+            html_path.write_text(page.content(), encoding="utf-8")
+        except Exception as error:
+            print(f"[stubhub] could not save page HTML: {error}")
+        print(
+            f"[stubhub] debug snapshot saved: {screenshot_path.name} / {html_path.name}"
+        )
+
     def discover(self, city, country):
         url, range_start, range_end = self._build_url(city)
 
@@ -307,9 +352,29 @@ class StubHubConnector(BaseConnector):
             self._load_all_events(page)
 
             html = page.content()
+            raw_events = _parse_events(html)
+
+            # Sanity check: StubHub's own event URLs reliably name the real
+            # city (see _url_matches_city). If almost none of them mention
+            # the searched city at all, this run's page probably wasn't the
+            # geo-filtered explore results at all — verified to happen in
+            # practice (an entire "Paris" run came back full of US events).
+            # Root cause unconfirmed, so this captures evidence rather than
+            # guessing at one.
+            if raw_events:
+                mismatches = sum(
+                    1 for e in raw_events if not _url_matches_city(e.get("url"), city)
+                )
+                if mismatches / len(raw_events) > 0.8:
+                    print(
+                        f"[stubhub] {mismatches}/{len(raw_events)} event URLs don't "
+                        f"mention '{city}' at all — this run's results look wrong "
+                        "(wrong page served?). Saving a debug snapshot."
+                    )
+                    self._save_debug_snapshot(page, f"city_mismatch_{city}")
+
             browser.close()
 
-        raw_events = _parse_events(html)
         for row in raw_events:
             row["_search_city"] = city
             row["_search_country"] = country

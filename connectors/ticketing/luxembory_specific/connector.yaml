@@ -1,0 +1,21 @@
+id: luxembourg_city
+type: scraper
+coverage: ["LU"]
+entry_point: connectors.ticketing.luxembory_specific.connector.LuxembourgCityConnector
+notes: >
+  Playwright + BeautifulSoup scraper for luxembourg-city.com's "What's On"
+  page — a single-city tourism site, not a multi-city platform, so
+  discover() raises ValueError for any city other than "Luxembourg City"
+  (SUPPORTED_CITY in connector.py). Genuinely supports server-side
+  date-range filtering via the site's flatpickr calendar UI, plus a
+  Python-side safety net that re-checks each event's own detail-page date.
+  Deliberately keeps only single-date events, skipping date-range events
+  (e.g. festivals spanning weeks) — inherited as-is from the reference
+  scraper's own documented scope, not an oversight. Requires an "adults"
+  audience filter to be confirmed on the page or raises RuntimeError
+  (dispatcher already catches and logs this as a failed fetch). Gives
+  first-party coordinates via each event's own Google Maps link, so no
+  geocoding API call is needed at all — coordinates are cached directly
+  via core.locations_store.save_location().
+  Folder is named "luxembory_specific" (a typo, kept as-is since it's
+  already the working folder — not renamed unprompted).

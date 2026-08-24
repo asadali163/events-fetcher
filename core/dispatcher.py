@@ -113,9 +113,18 @@ def run_connector(source, city, country, days_ahead=None):
     return events
 
 
-def get_events_for_city(city, days_ahead=None):
+def get_events_for_city(city, days_ahead=None, source_id=None):
     country = get_country_for_city(city)
     sources = get_sources_for_country(country)
+
+    if source_id:
+        sources = [s for s in sources if s["id"] == source_id]
+        if not sources:
+            print(
+                f"'{source_id}' isn't a registered source for {city} ({country}) — "
+                f"check the id in core/registry.yaml and its coverage list."
+            )
+            return []
 
     print(
         f"{city} -> {country} -> {len(sources)} matching source(s): "
@@ -146,11 +155,18 @@ def get_events_for_city(city, days_ahead=None):
 if __name__ == "__main__":
     city = sys.argv[1] if len(sys.argv) > 1 else "Chicago"
     days_ahead = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    source_id = sys.argv[3] if len(sys.argv) > 3 else None
 
-    events = get_events_for_city(city, days_ahead)
+    events = get_events_for_city(city, days_ahead, source_id)
     print(f"Total combined events for {city}: {len(events)}")
 
-    out_path = f"events_{city.lower()}.json"
+    # Single-source runs get their own output file so they don't clobber
+    # the full multi-source events_<city>.json from a normal run.
+    out_path = (
+        f"events_{city.lower()}_{source_id}.json"
+        if source_id
+        else f"events_{city.lower()}.json"
+    )
     with open(out_path, "w") as f:
         json.dump(events, f, indent=2)
     print(f"Saved combined results to {out_path}")

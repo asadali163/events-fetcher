@@ -50,11 +50,17 @@ sources:
     entry_point: connectors.ticketing.universe.connector.UniverseConnector
     notes: "Playwright + BeautifulSoup scraper — city-specific center point for search, only Amsterdam mapped so far; no date filter at all (days_ahead forced to None), refetches on a 10-day timer instead (REFETCH_INTERVAL_DAYS), same pattern as Meetup; venue location resolved via reverse-geocoding the scraped address, not the searched city"
 
-  - id: stubhub
+  # - id: stubhub
+  #   type: scraper
+  #   coverage: ["FR", "BE", "CA", "NL", "HU", "LU"]
+  #   entry_point: connectors.ticketing.stubhub.connector.StubHubConnector
+  #   notes: "Playwright + BeautifulSoup scraper — genuinely supports server-side date-range filtering (from/to), so days_ahead works normally, unlike Meetup/Universe; needs a per-city (lat, lon, timezone) tuple, only Paris mapped so far; bare venue names are geocoded with a distance sanity check against the city center, since a name alone can match the wrong place entirely"
+
+  - id: luxembourg_city
     type: scraper
-    coverage: ["FR", "BE", "CA", "NL", "HU", "LU"]
-    entry_point: connectors.ticketing.stubhub.connector.StubHubConnector
-    notes: "Playwright + BeautifulSoup scraper — genuinely supports server-side date-range filtering (from/to), so days_ahead works normally, unlike Meetup/Universe; needs a per-city (lat, lon, timezone) tuple, only Paris mapped so far; bare venue names are geocoded with a distance sanity check against the city center, since a name alone can match the wrong place entirely"
+    coverage: ["LU"]
+    entry_point: connectors.ticketing.luxembory_specific.connector.LuxembourgCityConnector
+    notes: "Playwright + BeautifulSoup scraper for luxembourg-city.com's What's On page — single-city site only (raises ValueError for any city other than Luxembourg City); genuinely supports server-side date filtering plus a Python-side safety net; deliberately keeps single-date events only, skips date ranges; gives first-party coordinates via each event's own Google Maps link, no geocoding API needed. Folder name has a typo (luxembory_specific), kept as-is."
 
   # --- examples to copy/replace as you find real scraper sources ---
 

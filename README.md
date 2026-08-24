@@ -14,7 +14,7 @@ which:
    Mostly unimplemented — it's where the system is headed once it needs to run at scale
    (Postgres/PostGIS, RabbitMQ, Airflow, Kubernetes...).
 2. **A working prototype** — real, running code that proves the core idea end to end with
-   seven live sources before more are added. **This README documents layer 2 in full
+   nine live sources before more are added. **This README documents layer 2 in full
    detail**, since that's what actually runs today.
 
 **Keep this file up to date.** Every time a new source is added, update the connectors
@@ -67,9 +67,11 @@ python core/dispatcher.py Paris 15       # forces a 15-day window across every s
 | [Bandsintown](connectors/ticketing/bandsintown/) | ticketing | scraper (Selenium + undetected-chromedriver) | FR, GB, US, CA, BE | See "Bandsintown, in detail" below — needs a one-time manual login, visits each event's own page for precise venue/coordinates, and knowingly operates outside `robots.txt`'s stated preference for its listing path |
 | [Meetup](connectors/ticketing/meetup/) | ticketing | scraper (Playwright) | FR | Deliberately scoped to 50+ attendee events only; no date-range filter, so it refetches on a 10-day timer instead of a window; knowingly operates outside `robots.txt`'s stated preference for `/find/` |
 | [Universe](connectors/ticketing/universe/) | ticketing | scraper (Playwright + BeautifulSoup) | NL, BE, CA (only Amsterdam mapped so far) | No date filter at all — `discover()` returns everything found, and `days_ahead` is forced to `None`; refetches on a 10-day timer instead (`REFETCH_INTERVAL_DAYS`), same pattern as Meetup; venue location resolved via `core.geocoding.geocode_place()`, which trusts the geocoder's own city/country over the searched city |
+| [StubHub](connectors/ticketing/stubhub/) | ticketing | scraper (Playwright + BeautifulSoup) | FR, HU, BE, NL, CA, LU (only Paris mapped so far) | **Currently disabled in `core/registry.yaml`** — a run once returned an entire city's worth of events (all 720) actually belonging to US cities; root cause unconfirmed, see its README's "Known unresolved issue". Genuinely supports server-side date filtering, unlike Meetup/Universe |
+| [Luxembourg City](connectors/ticketing/luxembory_specific/) | ticketing | scraper (Playwright + BeautifulSoup) | LU | Single-city site only — `discover()` raises for any city other than "Luxembourg City"; **`HEADLESS` must stay `False`, confirmed to break the date filter otherwise**; first-party coordinates from each event's own Google Maps link, no geocoding needed; deliberately keeps single-date events only |
 
 Cities currently mapped in `core/cities.yaml`: Chicago, Paris, London, Toronto, Lyon,
-Budapest, Brussels, Amsterdam. Note each Playwright/API connector also keeps its *own*
+Budapest, Brussels, Amsterdam, Luxembourg City. Note each Playwright/API connector also keeps its *own*
 city→id mapping (`CITY_SLUGS`, `CITY_METRO_PATHS`, `CITY_COORDINATES`, `CITY_GEONAME_IDS`,
 `CITY_LOCATION_SLUGS`) — a city must be in **both** `cities.yaml` and a given connector's
 own mapping for that
@@ -120,8 +122,15 @@ GetEvents/
 │   ├── meetup/
 │   │   ├── connector.yaml / connector.py     MeetupConnector
 │   │   └── scraper_test.py                   original reference script, kept for reference
-│   └── universe/
-│       ├── connector.yaml / connector.py     UniverseConnector
+│   ├── universe/
+│   │   ├── connector.yaml / connector.py     UniverseConnector
+│   │   └── scraper_test.py                   original reference script, kept for reference
+│   ├── stubhub/
+│   │   ├── connector.yaml / connector.py     StubHubConnector — disabled in registry.yaml, see its README
+│   │   ├── debug_snapshots/                  gitignored — screenshots/HTML saved on a city-mismatch warning
+│   │   └── scrapet_test.py                   original reference script, kept for reference
+│   └── luxembory_specific/                   folder name has a typo, kept as-is (see its README)
+│       ├── connector.yaml / connector.py     LuxembourgCityConnector
 │       └── scraper_test.py                   original reference script, kept for reference
 │
 ├── .env                                      API keys (not committed)
@@ -140,7 +149,7 @@ is the target-architecture skeleton from `ARCHITECTURE.md` and isn't wired up ye
 
 | Stage | Status |
 |---|---|
-| Connector | ✅ Done — 7 sources |
+| Connector | ✅ Done — 9 sources (1 currently disabled — see StubHub) |
 | Raw Event Storage | ✅ Done — `raw_store.py` |
 | Normalizer | ⚠️ Logic exists per-connector, not yet a separate queue-driven stage (deliberate — see below) |
 | Deduplicator | ⚠️ Done, but scoped to *within one dispatcher run* — see `core/dedup.py` |
@@ -419,6 +428,15 @@ understanding before touching it:
   wouldn't be safe anyway) and `days_ahead` is forced to `None`, same as Meetup. Also
   refetches on a 10-day timer (`REFETCH_INTERVAL_DAYS`) instead of a date window, same
   reasoning as Meetup. Documented in `connectors/ticketing/universe/README.md`.
+- **StubHub is currently disabled** (commented out in `core/registry.yaml`) after a run
+  returned an entire city's worth of events (all 720) mislabeled as belonging to a
+  different city — root cause unconfirmed. A URL-based mismatch check now warns and
+  captures a debug snapshot if it happens again, but doesn't resolve it. See
+  `connectors/ticketing/stubhub/README.md`.
+- **Luxembourg City's `HEADLESS` must stay `False`** — confirmed, not just untested,
+  that headless mode breaks the on-site date filter for this connector specifically
+  (the filter is a calendar-click UI interaction, not a URL parameter). See
+  `connectors/ticketing/luxembory_specific/README.md`.
 - **Not yet wired into the target architecture** in `ARCHITECTURE.md` — no Airflow
   scheduling, no RabbitMQ messaging, no Postgres/PostGIS, no API layer. This prototype exists
   specifically to validate the approach before that investment.

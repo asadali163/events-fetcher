@@ -10,3 +10,4 @@ undetected-chromedriver
 packaging
 lxml
 pandas
+groq
