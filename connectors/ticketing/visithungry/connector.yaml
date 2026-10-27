@@ -1,0 +1,26 @@
+id: visit_hungary
+type: scraper
+coverage: ["HU"]
+entry_point: connectors.ticketing.visithungry.connector.VisitHungaryConnector
+notes: >
+  Playwright + BeautifulSoup scraper for visithungary.com's nationwide
+  events collection. Unlike every other connector, this site has NO
+  city-level search at all (only date filters) — discover() is gated on
+  country == "HU", not a specific city, and always returns every event
+  anywhere in Hungary regardless of which HU city triggered it. If a
+  second HU city ever gets added to core/cities.yaml, running the
+  dispatcher for both would scrape and store this same nationwide dataset
+  twice, once under each city — a known architectural quirk of this
+  source, not a bug.
+  Dates are freeform text and frequently RANGES, sometimes spanning most
+  of a year for long-running exhibitions (e.g. "01 May, 2026 -
+  28 February, 2027") — the reference scraper never parsed these into
+  real dates at all, just kept the raw text. connector.py adds
+  _parse_event_date_range() to produce a real start/end date, verified
+  against all 6 events in a real test run.
+  Only a rough region label is given per event (e.g. "Pécs region",
+  sometimes covering two towns like "Tokaj and Nyíregyháza"), never a
+  venue or address — geocoded via core.geocoding.geocode_place() with a
+  generous country-wide distance sanity check (250km from Hungary's
+  center), since this is a whole-country source, not a city-scoped one.
+  Folder name has a typo (visithungry, missing the "a"), kept as-is.

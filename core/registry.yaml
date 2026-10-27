@@ -62,6 +62,18 @@ sources:
     entry_point: connectors.ticketing.luxembory_specific.connector.LuxembourgCityConnector
     notes: "Playwright + BeautifulSoup scraper for luxembourg-city.com's What's On page — single-city site only (raises ValueError for any city other than Luxembourg City); genuinely supports server-side date filtering plus a Python-side safety net; deliberately keeps single-date events only, skips date ranges; gives first-party coordinates via each event's own Google Maps link, no geocoding API needed. Folder name has a typo (luxembory_specific), kept as-is."
 
+  - id: eventbrite
+    type: scraper
+    coverage: ["FR", "HU"]
+    entry_point: connectors.ticketing.eventbrite.connector.EventbriteConnector
+    notes: "Playwright scraper, per-category search, genuinely supports server-side date filtering; only Paris mapped so far. Date parsing handles both English and French month names, in either Month-Day or Day-Month order (fixed a real gap found via testing: originally dropped ~32% of single-date events on a real Paris run). See connector's README."
+
+  - id: visit_hungary
+    type: scraper
+    coverage: ["HU"]
+    entry_point: connectors.ticketing.visithungry.connector.VisitHungaryConnector
+    notes: "Playwright + BeautifulSoup scraper — nationwide Hungary site with no city-level search at all, gated on country=='HU' not a specific city; genuinely supports server-side date filtering; dates are often freeform ranges (parsed via _parse_event_date_range, verified against real data), and location is only a rough region label (e.g. 'Pécs region'), geocoded with a country-wide distance sanity check. Folder name has a typo (visithungry), kept as-is. See connector's README."
+
   # --- examples to copy/replace as you find real scraper sources ---
 
   # - id: example_france_only_site

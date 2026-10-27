@@ -1,0 +1,21 @@
+id: eventbrite
+type: scraper
+coverage: ["FR"]
+entry_point: connectors.ticketing.eventbrite.connector.EventbriteConnector
+notes: >
+  Playwright scraper for Eventbrite's per-category search
+  (/d/<location_slug>/<category>--events/). Genuinely supports server-side
+  date-range filtering (start_date/end_date). Needs a per-city location
+  slug (CITY_LOCATION_SLUGS in connector.py); only Paris mapped so far.
+  Handles three date shapes: a single concrete date; a "multiple dates"
+  event with a COMPACT calendar (one row per listed date, WITH time); and
+  a "multiple dates" event with a SCROLLABLE full-month calendar (only
+  bookable cells within the window, DATE ONLY). One event can therefore
+  legitimately expand into several rows. FIXED (was a real gap in the
+  reference scraper, confirmed against real captured data -- 15 of 47
+  single-date rows, about a third, failed to parse in a real Paris test
+  run): the original single-date regex only recognized English month
+  names in "Month Day" order. _extract_month_day() now also handles
+  French month names and "Day Month" order (e.g. "Thu 27 Aug",
+  "28-30 aout" -- the range's first day is used). Re-verified against the
+  same real data: 0 of 47 now fail. See connector's README.

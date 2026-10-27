@@ -89,7 +89,7 @@ class MeetupConnector(BaseConnector):
         slug = self._location_slug(city)
         return (
             f"https://www.meetup.com/find/?location={slug}"
-            "&source=EVENTS&distance=anyDistance"
+            "&source=EVENTS&distance=anyDistance&eventType=inPerson"
         )
 
     @staticmethod
