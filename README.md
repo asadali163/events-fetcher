@@ -43,6 +43,9 @@ Create a `.env` file in the project root (not committed — see `.gitignore`):
 TICKETMASTER_API_KEY=your_real_key_here
 LOCATIONIQ_API_KEY=your_real_key_here
 OPENAGENDA_PUBLIC_KEY=your_real_key_here
+GROQ_API_KEY=your_real_key_here            # attendance estimates
+AWS_ACCESS_KEY_ID=your_real_key_here       # daily S3 upload (not needed on a server with an IAM role)
+AWS_SECRET_ACCESS_KEY=your_real_key_here
 ```
 
 Bandsintown additionally needs a one-time **manual** login before it can return more than
@@ -155,7 +158,8 @@ is the target-architecture skeleton from `ARCHITECTURE.md` and isn't wired up ye
 | Deduplicator | ⚠️ Done, but scoped to *within one dispatcher run* — see `core/dedup.py` |
 | Entity Resolution | ❌ Not started |
 | Geocoder | ⚠️ Logic exists (`core/geocoding.py`), not yet a separate stage |
-| Category Classifier / Attendance Estimator / Impact Scoring | ❌ Not started |
+| Attendance Estimator + impact radius | ✅ Done — `core/attendance/`, `core/enrich.py`, stored in `core/enrichment.db` (see "Automated pipeline") |
+| Impact Scoring (footfall uplift ≤20%, demand uplift ≤30%) | ✅ Done (formula, no LLM — `core/attendance/uplift.py`) |
 | Canonical Event Database | ⚠️ `canonical_store.py` exists and is upserted, but keying is exact-match, not fuzzy cross-run — see Limitations |
 | API | ❌ Not started |
 
@@ -163,6 +167,65 @@ The ⚠️ items are deliberate simplifications, not oversights: separating Norm
 into independent stages only makes sense once there's a real message queue to justify it
 (there isn't yet), and cross-run fuzzy deduplication is a harder problem than within-run
 deduplication, tackled once there's a real reason to need it.
+
+---
+
+## Automated pipeline (scheduler)
+
+One cron entry runs `core/scheduler.py` every 10 minutes; per-city timing lives in
+`core/pipeline.yaml` (nothing per city in cron). Paris today: collect every 15 days at
+02:00 for the next 30 days, daily refresh + output at 06:00 for the next 14 days.
+
+```
+collect (every N days)  core/collection.py  one PROCESS per source, timeout per source
+                          -> dedup -> canonical_events.db
+                        core/enrich.py      attendance + radius for new/changed events
+daily   (every day)     core/enrich.py      catch-up for the next 14 days
+                        core/export.py      output/<city>/events_<date>.json + latest.json (full, with _meta)
+                                            + public.json (clean array, top `max_events` (35) by attendance)
+                        core/upload.py      public.json -> S3 (overwrites upload.key), dataset.json asOf -> run date − 1 day, CloudFront invalidation
+```
+
+- **Failing sources never break a run.** Each source runs in its own process: an exception,
+  `sys.exit()`, interpreter crash, hang (killed after `source_timeout_minutes`) or broken import
+  only marks that source failed; its events are discarded and it is fetched again next run
+  (the refetch log is written only after a source's events reach canonical).
+- **Estimates** live in `core/enrichment.db` (`attendance_estimates`), keyed by `canonical_key`,
+  recomputed only when the event's input, the prompt version (`core/attendance/prompt.py`) or the
+  model changes. Soonest dates first, at most `enrich.max_llm_events_per_key` (220) × number of Groq
+  keys LLM events per run. Keys: `GROQ_API_KEY`, `GROQ_API_KEY_2`, … in `.env`; when one hits its daily
+  limit the next is used (keys of the same Groq account share one ≈200k tokens/day quota). The rest next run.
+- **Upload:** `upload` in `core/pipeline.yaml` (bucket, region, key). Paris →
+  `s3://sa-bat-data-bucket160908-dev/public/soq-data-stag/cities/paris/events.json`, overwritten daily.
+  Credentials come from `.env` / `~/.aws` / IAM role, never the repo. No credentials → skipped with a
+  warning; an S3 error fails the daily job (retried later); an empty event list is never uploaded.
+  After each upload the CloudFront cache is invalidated (`upload.cloudfront`, Paris: `E1QI4KP0YIGYH6`,
+  path `/*`); the IAM user needs `cloudfront:CreateInvalidation`.
+- **Run log:** `core/run_log.db`. A failed job is retried after `retry_after_minutes`.
+
+Commands:
+
+```bash
+python -m core.scheduler --status                 # last runs + what is due
+python -m core.scheduler --dry-run                # what a tick would run
+python -m core.scheduler --run collect --city Paris   # run a job now (also: daily, all)
+python -m core.collection Paris --sources openagenda  # collection only (--force ignores refetch log)
+python -m core.enrich Paris --days 14 --max 20        # enrichment only
+python -m core.export Paris                           # write the daily output only
+python -m core.upload Paris --dry-run                 # what would go to S3 (drop --dry-run to upload)
+python -m core.upload Paris --invalidate-only         # only clear the CloudFront cache
+python -m core.upload Paris --dataset-only            # only set dataset.json asOf (run date − 1 day)
+python core/enrichment_store.py Paris                 # estimate counts by status
+```
+
+Server cron (one line; `logs/` must exist):
+
+```
+*/10 * * * * cd /path/to/events-fetcher && .venv/bin/python -m core.scheduler >> logs/scheduler.log 2>&1
+```
+
+New city: add it to `core/cities.yaml` (country) and under `cities:` in `core/pipeline.yaml`
+(schedule overrides + `attendance` rules/venues), plus `boundaries/<City>.kml` for sportsevents24.
 
 ---
 

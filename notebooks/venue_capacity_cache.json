@@ -1,0 +1,69 @@
+{
+ "[\"Chateau des Rentiers - 20h - Paris13\", \"Chateau des Rentiers - 20h - Paris13\", \"volleyball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "CENTRE SPORTIF CHÂTEAU DES RENTIERS - GYMNASE",
+  "equip_numero": "E002I751130014",
+  "matched_query": "CHATEAU RENTIERS"
+ },
+ "[\"GYMNASE BOURNEVILLE - Paris\", \"GYMNASE BOURNEVILLE - Paris\", \"basketball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "CENTRE SPORTIF DU DOCTEUR BOURNEVILLE KELLERMANN - GYMNASE",
+  "equip_numero": "E001I751130023",
+  "matched_query": "BOURNEVILLE"
+ },
+ "[\"GYMNASE EMILE ANTHOINE - Paris\", \"GYMNASE EMILE ANTHOINE - Paris\", \"basketball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "CENTRE SPORTIF EMILE ANTHOINE - GYMNASE",
+  "equip_numero": "E008I751150039",
+  "matched_query": "EMILE ANTHOINE"
+ },
+ "[\"GYMNASE POLIVEAU\", \"GYMNASE POLIVEAU, 39 BIS RUE POLIVEAU, 75005, PARIS 5e\", \"handball\", \"Paris\"]": {
+  "seats": 299,
+  "facility": "CENTRE SPORTIF POLIVEAU - GYMNASE",
+  "equip_numero": "E001I751050009",
+  "matched_query": "POLIVEAU"
+ },
+ "[\"Paris Bercy - Sonja Henie\", \"Paris Bercy - Sonja Henie\", \"ice-hockey\", \"Paris\"]": {
+  "seats": 300,
+  "facility": "ACCORHOTELS ARENA - PATINOIRE SONJA HENIE",
+  "equip_numero": "E003I751120034",
+  "matched_query": "SONJA"
+ },
+ "[\"SUCHET\", \"SUCHET, 25 avenue du marechal franchet d’esperey, 75016, PARIS 16e\", \"handball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "CENTRE SPORTIF SUCHET - GYMNASE DE TYPE C",
+  "equip_numero": "E003I751160027",
+  "matched_query": "SUCHET"
+ },
+ "[\"GYMNASE CHARLES RIGOULOT - Paris\", \"GYMNASE CHARLES RIGOULOT - Paris\", \"basketball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "CENTRE SPORTIF CHARLES RIGOULOT - GYMNASE DE TYPE B",
+  "equip_numero": "E004I751150024",
+  "matched_query": "CHARLES RIGOULOT"
+ },
+ "[\"VIGNOLES\", \"VIGNOLES, 87 RUE DES HAIES, 75020, PARIS 20e\", \"handball\", \"Paris\"]": {
+  "seats": 100,
+  "facility": "GYMNASE DES VIGNOLES - GYMNASE",
+  "equip_numero": "E001I751200022",
+  "matched_query": "VIGNOLES"
+ },
+ "[\"Colette Besson\", \"Colette Besson\", \"volleyball\", \"Paris\"]": null,
+ "[\"LAC\", \"LAC, ROUTE EXPRESS, 71210, TORCY\", \"handball\", \"Paris\"]": {
+  "seats": 170,
+  "facility": "Gymnase du lac - Gymnase du lac",
+  "equip_numero": "E001I715400001",
+  "matched_query": "LAC"
+ },
+ "[\"GYMNASE CHARLES-MILDE (EX SAUSSURE)\", \"GYMNASE CHARLES-MILDE (EX SAUSSURE), 38 rue georges-picquart, 75017, PARIS 17e\", \"handball\", \"Paris\"]": {
+  "seats": null,
+  "facility": "GYMNASE SAUSSURE - GYMNASE",
+  "equip_numero": "E001I751170046",
+  "matched_query": "SAUSSURE"
+ },
+ "[\"STADE PIERRE DE COUBERTIN\", \"STADE PIERRE DE COUBERTIN, 82 AVENUE GEORGES-LAFONT, 75016, PARIS 16e\", \"handball\", \"Paris\"]": {
+  "seats": 4000,
+  "facility": "STADE PIERRE DE COUBERTIN - GYMNASE CENTRAL",
+  "equip_numero": "E002I751160026",
+  "matched_query": "PIERRE COUBERTIN"
+ }
+}

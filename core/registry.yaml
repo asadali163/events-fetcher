@@ -32,11 +32,12 @@ sources:
     entry_point: connectors.ticketing.openagenda.connector.OpenAgendaConnector
     notes: "Agenda search by city + geo bounding box — city-specific center point, only Paris and Lyon mapped so far"
 
-  - id: bandsintown
-    type: scraper
-    coverage: ["FR", "GB", "US", "CA", "BE"]
-    entry_point: connectors.ticketing.bandsintown.connector.BandsintownConnector
-    notes: "Selenium + undetected-chromedriver scraper (switched from Playwright — Cloudflare was detecting the Playwright/CDP connection itself); needs a one-time manual login (see login.py in its folder); degrades to first-page-only results without a saved session"
+  # Disabled 2026-11-22: blocked from our side (Cloudflare). Uncomment to re-enable.
+  # - id: bandsintown
+  #   type: scraper
+  #   coverage: ["FR", "GB", "US", "CA", "BE"]
+  #   entry_point: connectors.ticketing.bandsintown.connector.BandsintownConnector
+  #   notes: "Selenium + undetected-chromedriver scraper (switched from Playwright — Cloudflare was detecting the Playwright/CDP connection itself); needs a one-time manual login (see login.py in its folder); degrades to first-page-only results without a saved session"
 
   - id: meetup
     type: scraper
@@ -73,6 +74,12 @@ sources:
     coverage: ["HU"]
     entry_point: connectors.ticketing.visithungry.connector.VisitHungaryConnector
     notes: "Playwright + BeautifulSoup scraper — nationwide Hungary site with no city-level search at all, gated on country=='HU' not a specific city; genuinely supports server-side date filtering; dates are often freeform ranges (parsed via _parse_event_date_range, verified against real data), and location is only a rough region label (e.g. 'Pécs region'), geocoded with a country-wide distance sanity check. Folder name has a typo (visithungry), kept as-is. See connector's README."
+
+  - id: sportsevents24
+    type: api
+    coverage: ["FR"]
+    entry_point: connectors.sports.sportsevents24.connector.SportsEvents24Connector
+    notes: "Free SportsEvents24 API (no key) — 20 sports, queried per country + sport only (no city search). Stores the whole country in raw/normalized; validate() rejects events outside boundaries/<City>.kml so only in-boundary events reach canonical. Needs a boundary file per city (only Paris so far). Free allowance per IP: 100 requests/day, 5,000 records/month; soft budget of 1,000 records per IP; resumes from a cache file next run. Also contains proxy/IP rotation on limits (see connector.py docstring). See connector's README."
 
   # --- examples to copy/replace as you find real scraper sources ---
 

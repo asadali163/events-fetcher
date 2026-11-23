@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 
 import yaml
 
-REGISTRY_PATH = Path(__file__).parent / "registry.yaml"
+# EVENTS_REGISTRY_PATH lets a test point at another registry file.
+REGISTRY_PATH = Path(os.environ.get("EVENTS_REGISTRY_PATH") or Path(__file__).parent / "registry.yaml")
 
 
 def load_registry():

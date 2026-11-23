@@ -1,0 +1,120 @@
+# Scheduling + enrichment settings per city.
+#
+# core/cities.yaml still maps each city to its country (which picks the
+# sources in registry.yaml). This file says WHEN each city runs and how its
+# events are enriched. A city that isn't listed under `cities:` here is never
+# scheduled. Each city inherits `defaults` and overrides only what differs.
+#
+# Jobs (run by core/scheduler.py, see its docstring):
+#   collect - every `every_days` days at `at` (city's local time): run every
+#             source for the next `window_days` days, dedup, save canonical,
+#             then estimate attendance + radius for new/changed events.
+#   daily   - every day at `at`: estimate anything still missing in the next
+#             `window_days` days, export the final event list, then upload it
+#             (see `upload`).
+
+defaults:
+  timezone: Europe/Paris
+  collect:
+    every_days: 15
+    at: "02:00"
+    window_days: 30
+    # A source that runs longer than this is killed and its events discarded.
+    source_timeout_minutes: 120
+    # Sources to skip for this city (ids from registry.yaml).
+    exclude_sources: []
+  daily:
+    at: "06:00"
+    window_days: 14
+  enrich:
+    enabled: true
+    provider: groq
+    model: openai/gpt-oss-20b
+    batch_size: 8
+    # Free Groq tier: ~200k tokens/day per model per Groq account, ~800-850
+    # tokens per event -> at most this many LLM events per run PER API KEY
+    # (GROQ_API_KEY, GROQ_API_KEY_2, ... in .env; 7 keys -> 1,540). When a key
+    # hits its daily limit the next key is used; the rest wait for the next
+    # run (soonest dates first). Keys of the same Groq account share a quota.
+    max_llm_events_per_key: 220
+    # Give up on an event the model keeps failing on after this many tries.
+    max_attempts: 3
+  # Daily upload of the clean event list (output/<city>/public.json) to S3.
+  # The object at `key` is overwritten each day. Credentials are NOT here:
+  # put AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in .env (or use an IAM role
+  # on the server). Without credentials the upload is skipped with a warning.
+  upload:
+    enabled: false
+    provider: s3
+    bucket: ""
+    region: ""
+    key: ""
+    # true: only events with an estimate (enabled=true); false: every event.
+    only_enabled: true
+    # Keep only the N biggest events (by expectedAttendance) in the window,
+    # biggest first. Leave empty for all.
+    max_events: 35
+    # At most this many of those events at the same location (same venue
+    # name, or within 150 m), so the list covers more places.
+    max_per_venue: 2
+    # CloudFront cache invalidation after each successful upload.
+    # Empty distribution_id = skipped. Needs cloudfront:CreateInvalidation.
+    cloudfront:
+      distribution_id: ""
+      paths: ["/*"]
+    # After the events upload: download this file, set ONLY the date part of
+    # `field` to the run date (city timezone) + offset_days, upload it back.
+    # offset_days -1: a run on 23 Nov writes 22 Nov. Empty key = skipped.
+    dataset:
+      key: ""
+      field: asOf
+      offset_days: -1
+  # If a job fails, wait this long before the scheduler retries it.
+  retry_after_minutes: 60
+
+cities:
+  Paris:
+    enabled: true
+    upload:
+      enabled: true
+      bucket: sa-bat-data-bucket160908-dev
+      region: ap-southeast-1
+      key: public/soq-data-stag/cities/paris/events.json
+      cloudfront:
+        distribution_id: E1QI4KP0YIGYH6
+      dataset:
+        key: public/soq-data-stag/cities/paris/dataset.json
+    attendance:
+      # Rules applied before any LLM call.
+      postcode_prefixes: ["75"]
+      url_slug: paris
+      # French sports-facility register: department searched when a sports
+      # venue has no postcode. Leave out for cities outside France.
+      register_department: "75"
+      # Venue size hints written into the prompt.
+      reference_points: >-
+        Stade de France ~80,000; Parc des Princes ~48,000; Paris La Defense Arena ~40,000 (concerts);
+        Accor Arena ~20,000; Adidas Arena ~8,000; Zenith Paris ~6,300; Olympia ~2,000; Salle Pleyel ~1,900;
+        Bataclan ~1,500; La Cigale ~1,400; Trianon ~1,000; Elysee Montmartre ~1,300; theatres 300-1,000;
+        small clubs and bars 50-300; jazz clubs 50-150; chapels/small churches 80-300.
+      # Well-known single-hall venues -> max capacity, used as a hard ceiling.
+      # Matched as lower-case ASCII text inside the event's venue name.
+      known_venues:
+        stade de france: 80000
+        parc des princes: 48000
+        la defense arena: 40000
+        accor arena: 20300
+        adidas arena: 8000
+        zenith paris: 6300
+        zenith de paris: 6300
+        olympia: 2000
+        salle pleyel: 1900
+        casino de paris: 1500
+        bataclan: 1500
+        elysee montmartre: 1380
+        la cigale: 1400
+        trianon: 1000
+        cabaret sauvage: 1200
+        new morning: 400
+        point ephemere: 300
+        la maroquinerie: 500

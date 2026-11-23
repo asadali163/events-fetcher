@@ -1,0 +1,54 @@
+﻿#,event,date,venue,your_attendance,v2_attendance (120b),v3_attendance (20b),v3_priors_attendance (20b),your_radius_m,v3_priors_radius_m,prior_category,held_out_example
+1,CCS ILOT IV vs AXA - KPMG PARIS,2026-11-19,Chateau des Rentiers - 20h - Paris13,14,70,50.0,10.0,100,100.0,leisure_league,False
+2,CONTREPIED D vs LUMAS 2,2026-11-20,Chateau des Rentiers - 20h - Paris13,14,55,70.0,15.0,100,100.0,leisure_league,False
+3,PARIS UNIVERSITE CLUB vs RAMBOUILLET SPORTS,2026-11-21,GYMNASE BOURNEVILLE - Paris,60,150,50.0,55.0,150,100.0,amateur_regional,False
+4,CAP SPORT ART AVENTURE AMITIE 2 vs PARIS BASKET 2,2026-11-21,GYMNASE EMILE ANTHOINE - Paris,30,100,50.0,30.0,100,100.0,para_sport,False
+5,ENT PARIS GALAXY vs HB BOUCLE DE SEINE 78,2026-11-21,GYMNASE POLIVEAU,35,130,50.0,60.0,100,100.0,youth_sport,False
+6,FRANCAIS VOLANTS vs Les Phénix de Reims,2026-11-21,Paris Bercy - Sonja Henie,300,250,250.0,200.0,250,200.0,ice_hockey_d2,False
+7,STADE FRANCAIS vs AS POISSY HB,2026-11-21,SUCHET,30,100,50.0,55.0,100,100.0,amateur_regional,False
+8,PARIS BASKET 15 vs ASBB NOISY BAILLY,2026-11-21,GYMNASE CHARLES RIGOULOT - Paris,50,150,100.0,60.0,150,100.0,amateur_regional,False
+9,PARIS SPORT CLUB vs UNION SPORTIVE DREUX VERNOUILLET HANDBALL,2026-11-21,VIGNOLES,80,80,80.0,75.0,150,100.0,national_amateur,True
+10,PARIS UC 1B vs HBC CACHAN,2026-11-21,GYMNASE POLIVEAU,40,180,55.0,80.0,100,100.0,amateur_regional,False
+11,CSM FINANCES vs AS BONDY,2026-11-21,GYMNASE CHARLES-MILDE (EX SAUSSURE),50,180,50.0,50.0,150,100.0,amateur_regional,False
+12,ENT. PARIS ST-GERMAIN / PARIS GALAXY vs ENT. SAINT-LO AGGLO,2026-11-21,STADE PIERRE DE COUBERTIN,80,500,60.0,80.0,150,100.0,youth_sport,True
+13,REMI TOULON,2026-07-18,JASS CLUB PARIS,60,85,100.0,140.0,100,150.0,none,True
+14,House of Groove,2026-07-18,Paname sur Seine,500,100,150.0,840.0,250,400.0,none,False
+15,Arkayla,2026-10-23,La Boule Noire,120,180,45.0,180.0,150,150.0,none,False
+16,Daudi Matsiko + Kat White,2026-10-26,POPUP!,90,130,100.0,100.0,100,100.0,none,False
+17,Les Femmes s'en mêlent : Metro Verlaine + Guest,2026-11-14,Point Ephémère,230,120,100.0,210.0,200,200.0,none,False
+18,Mardi Jazz!,2026-11-17,POPUP!,80,90,85.0,,100,,,False
+19,KNEECAP,2026-11-20,Zénith Paris - La Villette,6200,2000,4800.0,,1000,,,False
+20,SLIFT,2026-11-21,Le Trianon,900,500,800.0,,500,,,False
+21,Paris Paloma,2026-11-27,Bataclan,1450,900,1200.0,,500,,,False
+22,EDIS,2026-11-30,La Cigale,1250,700,800.0,,500,,,False
+23,AFTERWORK 75 - PARIS 15E,2026-09-16,Aux 100 Kilos,40,70,80.0,60.0,100,100.0,workshop_networking,False
+24,La Défense : Architectures du ciel,2026-10-11,La Défense,20,150,650.0,80.0,500,100.0,talk_lecture,False
+25,"Conférence : Raymond Delamarre, sculpteur et médailleur",2026-10-12,Musée des Années 30,60,80,150.0,50.0,100,100.0,talk_lecture,False
+26,L'expérience Mirokaï - Musée Robotique et IA,2026-11-25,18 Rue de la Fontaine au Roi,100,100,90.0,150.0,100,150.0,quiet_free_exhibition,False
+27,Matinée jeunes chercheurs et chercheuses (4ème édition),2026-11-26,Sciences Po (Salons scientifiques),50,130,180.0,80.0,100,100.0,talk_lecture,False
+28,Salon du Gaming 2026,2026-11-28,Gymnase des Mortefontaines,600,1800,1200.0,500.0,300,300.0,community_fair,False
+29,Journée nationale FédéCRT — CRT 2027 : changement d’échelle,2026-12-02,Paris Expo Porte de Versailles,250,250,4800.0,400.0,200,300.0,network_day,False
+30,Le rendez-vous des AI Builders #5,2026-08-10,Le Bar de L'Empire Hotel,22,30,100.0,50.0,100,100.0,free_meetup,False
+31,"Exposition « Couleurs de Corée, Lumière sur l’art contemporain coréen »",2026-08-05,CENTRE CULTUREL CORÉEN,80,150,160.0,150.0,100,150.0,quiet_free_exhibition,False
+32,Visit to the Exelmans Barracks,2026-09-19,Caserne Exelmans,55,30,,25.0,100,100.0,guided_tour,True
+33,Festival – Journée européenne des langues,2026-09-26,Goethe-Institut,150,180,120.0,150.0,150,150.0,none,False
+34,Ciné-Club : Mission de Roland Joffé,2026-11-21,Collège des Bernardins,110,70,140.0,150.0,100,150.0,none,False
+35,Avance au large,2026-11-25,Salle Saint-Jean-Paul II,40,60,60.0,40.0,100,100.0,parish_youth,False
+36,Pause au monastère chez les sœurs à Paris,2026-11-28,Fraternité monastique des  sœurs de Jérusalem à Paris,12,30,40.0,20.0,100,100.0,religious_retreat,False
+37,Audition d'orgue de Thomas Ospital,2026-11-29,Église Saint-Eustache,400,150,40.0,,200,,,False
+38,Ousmane Kouyate,2026-07-16,Cabaret Sauvage,900,800,200.0,,400,,,False
+39,Gruuve,2026-08-27,Panic Room,130,140,140.0,,100,,,False
+40,Paul Rouger,2026-11-17,Chapelle Saint Symphorien,70,80,120.0,120.0,100,150.0,none,False
+41,Christophe Maé,2026-11-20,Accor Arena,17000,16000,14000.0,16200.0,1500,1400.0,none,False
+42,Tagada Jones,2026-11-20,L'Olympia,2400,1400,1300.0,1600.0,600,500.0,none,False
+43,Allstars Festival 2026,2026-11-20,New Morning,280,400,500.0,280.0,150,250.0,none,False
+44,Thibaut Garcia,2026-11-20,"Philharmonie 2, Cité de la Musique",650,1100,900.0,960.0,300,400.0,none,False
+45,Eboni Fondren,2026-11-20,Le M. Musée du Vin,60,120,150.0,140.0,100,150.0,none,False
+46,Tokio Hotel,2026-11-21,Adidas Arena,7000,2200,26000.0,6400.0,1000,950.0,none,False
+47,Biga*Ranx,2026-11-21,Zénith Paris La Villette,6300,2500,4100.0,5000.0,1000,900.0,none,True
+48,Marillion,2026-11-21,Casino de Paris,1400,1200,900.0,1200.0,500,450.0,none,False
+49,Bleachers,2026-11-21,Salle Pleyel,2000,1200,1300.0,1500.0,600,500.0,none,False
+50,MUNA,2026-11-21,Élysée Montmartre,1000,800,910.0,1100.0,500,450.0,none,False
+51,Hatsune Miku,2026-11-22,Accor Arena,11000,15000,19000.0,19500.0,1200,1500.0,none,False
+52,Maîtrise Notre-Dame de Paris,2026-11-24,Cathédrale Notre-Dame de Paris,900,600,700.0,1400.0,300,500.0,none,False
+53,Inferno,2026-11-27,Bobino,650,800,560.0,600.0,300,350.0,none,False

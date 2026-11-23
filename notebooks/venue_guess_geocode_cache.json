@@ -1,0 +1,368 @@
+{
+ "77100 Meaux, France": {
+  "lat": 48.9601,
+  "lon": 2.8788,
+  "geoTown": "Meaux",
+  "type": "postcode"
+ },
+ "Stade du Petit Bois, 77100 Meaux, France": {
+  "lat": 48.921595,
+  "lon": 2.862093,
+  "geoTown": "Mareuil-lès-Meaux",
+  "type": null
+ },
+ "Meaux, France": {
+  "lat": 48.9582708,
+  "lon": 2.8773541,
+  "geoTown": "Meaux",
+  "type": "administrative"
+ },
+ "94160 Fresnes, France": {
+  "lat": 47.6093837,
+  "lon": 4.4384663,
+  "geoTown": "Fresnes",
+  "type": "administrative"
+ },
+ "95800 Val-de-Bievre, France": {
+  "lat": 48.7425552,
+  "lon": 2.2259638,
+  "geoTown": "Igny",
+  "type": "service"
+ },
+ "Fresnes, France": {
+  "lat": 47.6093837,
+  "lon": 4.4384663,
+  "geoTown": "Fresnes",
+  "type": "administrative"
+ },
+ "91200 Nemours, France": {
+  "lat": 48.268026,
+  "lon": 2.6953079,
+  "geoTown": "Nemours",
+  "type": "administrative"
+ },
+ "Stade du Petit Bois, 77140 Nemours, France": {
+  "lat": 48.280574,
+  "lon": 2.698652,
+  "geoTown": "Nemours",
+  "type": null
+ },
+ "77110 Nemours, France": {
+  "lat": 48.268026,
+  "lon": 2.6953079,
+  "geoTown": "Nemours",
+  "type": "administrative"
+ },
+ "78300 Poissy, France": {
+  "lat": 48.929,
+  "lon": 2.0495,
+  "geoTown": "Poissy",
+  "type": "postcode"
+ },
+ "78300 Saint-Germain-en-Laye, France": {
+  "lat": 48.929,
+  "lon": 2.0495,
+  "geoTown": "Poissy",
+  "type": "postcode"
+ },
+ "95200 Argenteuil, France": {
+  "lat": 48.9479069,
+  "lon": 2.2481797,
+  "geoTown": "Argenteuil",
+  "type": "administrative"
+ },
+ "95100 Argenteuil, France": {
+  "lat": 48.9479,
+  "lon": 2.2474,
+  "geoTown": "Argenteuil",
+  "type": "postcode"
+ },
+ "Parc des Princes, 75012 Paris, 75012 Paris, France": {
+  "lat": 48.8413634,
+  "lon": 2.2530693,
+  "geoTown": "Paris",
+  "type": "stadium"
+ },
+ "2 Rue de la Porte de la Chapelle, 75018 Paris, France": {
+  "lat": 48.727371,
+  "lon": 2.049041,
+  "geoTown": "Milon-la-Chapelle",
+  "type": null
+ },
+ "75011 Paris, France": {
+  "lat": 48.8534,
+  "lon": 2.3488,
+  "geoTown": "Paris",
+  "type": "postcode"
+ },
+ "2 Rue du Commandant Guilbaud, 75016 Paris, France": {
+  "lat": 48.8394181,
+  "lon": 2.2524886,
+  "geoTown": "Paris",
+  "type": "sports_centre"
+ },
+ "105 Rue de la Convention, 75015 Paris, France": {
+  "lat": 48.8413913,
+  "lon": 2.2875093,
+  "geoTown": "Paris",
+  "type": "house"
+ },
+ "1 Rue de la Mairie, 93200 Saint-Denis, France": {
+  "lat": 48.9384536,
+  "lon": 1.6052635,
+  "geoTown": "Le Tertre-Saint-Denis",
+  "type": "residential"
+ },
+ "93200 Saint-Denis, France": {
+  "lat": 48.9356,
+  "lon": 2.3539,
+  "geoTown": "Saint-Denis",
+  "type": "postcode"
+ },
+ "1, rue de la Mairie, 44000 Nantes, France": {
+  "lat": 47.1234029,
+  "lon": -1.5837618,
+  "geoTown": "Pont-Saint-Martin",
+  "type": "house"
+ },
+ "2 Rue du Stade, 44200 Nantes, France": {
+  "lat": 47.2497322,
+  "lon": -1.5932218,
+  "geoTown": "Orvault",
+  "type": "house"
+ },
+ "100 Rue de la Fosse aux Loups, 44300 Nantes, France": {
+  "lat": 47.1173246,
+  "lon": -1.233709,
+  "geoTown": "Mouzillon",
+  "type": "unclassified"
+ },
+ "1 rue de la Mairie, 92100 Suresnes, France": {
+  "lat": 48.836848,
+  "lon": 2.627501,
+  "geoTown": "Lognes",
+  "type": null
+ },
+ "1 Rue du Stade, 92150 Suresnes, France": {
+  "lat": 48.983075,
+  "lon": 1.961571,
+  "geoTown": "Verneuil-sur-Seine",
+  "type": null
+ },
+ "92150 Suresnes, France": {
+  "lat": 48.8714,
+  "lon": 2.2293,
+  "geoTown": "Suresnes",
+  "type": "postcode"
+ },
+ "1 Avenue du Parc, 74000 Annecy, France": {
+  "lat": 45.9088494,
+  "lon": 6.1219,
+  "geoTown": "Annecy",
+  "type": "car_sharing"
+ },
+ "1 Rue du Stade, 74960 Annecy, France": {
+  "lat": 45.86238,
+  "lon": 5.95269,
+  "geoTown": "Rumilly",
+  "type": "house"
+ },
+ "1000 route de la Roquette, 74000 Annecy, France": {
+  "lat": 46.054512,
+  "lon": 6.528004,
+  "geoTown": "Marnaz",
+  "type": null
+ },
+ "1, rue de la Mosson, 31000 Toulouse, France": {
+  "lat": 43.824492,
+  "lon": 1.723028,
+  "geoTown": "Rabastens",
+  "type": null
+ },
+ "1 Rue du Stade Ernest-Wallon, 31100 Toulouse, France": {
+  "lat": 43.603902,
+  "lon": 1.440694,
+  "geoTown": "Toulouse",
+  "type": null
+ },
+ "100 allée Ernest Wallon, 31400 Toulouse, France": {
+  "lat": 43.603902,
+  "lon": 1.440694,
+  "geoTown": "Toulouse",
+  "type": null
+ },
+ "16 Rue du Stade, 40100 Dax, France": {
+  "lat": 43.6916934,
+  "lon": -1.0051104,
+  "geoTown": "Narrosse",
+  "type": "living_street"
+ },
+ "Stade Jean-Dauguet, 40100 Dax, France": {
+  "lat": 44.842222,
+  "lon": -0.544017,
+  "geoTown": "Bordeaux",
+  "type": null
+ },
+ "1 Avenue du Stade, 10000 Troyes, France": {
+  "lat": 48.119048,
+  "lon": 4.373526,
+  "geoTown": "Bar-sur-Seine",
+  "type": null
+ },
+ "1 Rue du Stade, 10000 Troyes, France": {
+  "lat": 48.2239726,
+  "lon": 4.0434284,
+  "geoTown": "Saint-Pouange",
+  "type": "house"
+ },
+ "1 Avenue de la République, 10000 Troyes, France": {
+  "lat": 48.238548,
+  "lon": 4.464359,
+  "geoTown": "Vendeuvre-sur-Barse",
+  "type": null
+ },
+ "1 Avenue du Stade, 53000 Laval, France": {
+  "lat": 48.289274,
+  "lon": -0.478541,
+  "geoTown": "Grazay",
+  "type": null
+ },
+ "1 Rue du Stade, 53000 Laval, France": {
+  "lat": 48.0768069,
+  "lon": -0.7650435,
+  "geoTown": "Laval",
+  "type": "house"
+ },
+ "1000 Route de la Chapelle, 53000 Laval, France": {
+  "lat": 48.1019028,
+  "lon": -0.6857436,
+  "geoTown": "Bonchamp-lès-Laval",
+  "type": "residential"
+ },
+ "1 Avenue du Stade Marcel Picot, 54000 Nancy, France": {
+  "lat": 48.690303,
+  "lon": 6.178289,
+  "geoTown": "Nancy",
+  "type": null
+ },
+ "1 Rue du Stade, 54000 Nancy, France": {
+  "lat": 48.7127683,
+  "lon": 6.1802588,
+  "geoTown": "Malzéville",
+  "type": "house"
+ },
+ "100 Rue de la Pompe à Feu, 54000 Nancy, France": {
+  "lat": 48.913908,
+  "lon": 6.066937,
+  "geoTown": "Pont-à-Mousson",
+  "type": null
+ },
+ "Route de Monein, 64200 Monein, France": {
+  "lat": 43.3180467,
+  "lon": -0.5485417,
+  "geoTown": "Parbayse",
+  "type": "tertiary"
+ },
+ "64330 Monein, France": {
+  "lat": 43.3211151,
+  "lon": -0.5786974,
+  "geoTown": "Monein",
+  "type": "administrative"
+ },
+ "59310 Wattrelos, France": {
+  "lat": 50.7016015,
+  "lon": 3.2153907,
+  "geoTown": "Wattrelos",
+  "type": "administrative"
+ },
+ "59150 Wattrelos, France": {
+  "lat": 50.7012,
+  "lon": 3.2181,
+  "geoTown": "Wattrelos",
+  "type": "postcode"
+ },
+ "15200 Teill, France": {
+  "lat": 46.714842,
+  "lon": 2.464483,
+  "geoTown": null,
+  "type": null
+ },
+ "Stade du Petit Bois, 02100 Saint-Quentin, France": {
+  "lat": 49.860105,
+  "lon": 3.262734,
+  "geoTown": "Saint-Quentin",
+  "type": null
+ },
+ "63400 Clermont-Ferrand, France": {
+  "lat": 45.7736,
+  "lon": 3.067,
+  "geoTown": "Chamalières",
+  "type": "postcode"
+ },
+ "93170 Tremblay-en-France, France": {
+  "lat": 48.9758654,
+  "lon": 2.5014302,
+  "geoTown": "Tremblay-en-France",
+  "type": "unclassified"
+ },
+ "93390 Tremblay-en-France, France": {
+  "lat": 48.937284,
+  "lon": 2.5742851,
+  "geoTown": "Tremblay-en-France",
+  "type": "residential"
+ },
+ "93290 Tremblay-en-France, France": {
+  "lat": 48.9495999,
+  "lon": 2.5684,
+  "geoTown": "Tremblay-en-France",
+  "type": "postcode"
+ },
+ "71270 Chenove, France": {
+  "lat": 47.2932,
+  "lon": 5.00308,
+  "geoTown": "Chenôve",
+  "type": "administrative"
+ },
+ "21200 Chenôve, France": {
+  "lat": 47.2932,
+  "lon": 5.00308,
+  "geoTown": "Chenôve",
+  "type": "administrative"
+ },
+ "21300 Chenôve, France": {
+  "lat": 47.2932,
+  "lon": 5.0046,
+  "geoTown": "Chenôve",
+  "type": "postcode"
+ },
+ "44120 Rezé, France": {
+  "lat": 47.1778346,
+  "lon": -1.5295105,
+  "geoTown": "Rezé",
+  "type": "residential"
+ },
+ "44400 Rezé, France": {
+  "lat": 47.1906,
+  "lon": -1.5688,
+  "geoTown": "Rezé",
+  "type": "postcode"
+ },
+ "13100 Salon-de-Provence, France": {
+  "lat": 43.6405237,
+  "lon": 5.0980225,
+  "geoTown": "Salon de Provence",
+  "type": "administrative"
+ },
+ "13300 Salon-de-Provence, France": {
+  "lat": 43.6462684,
+  "lon": 5.0677628,
+  "geoTown": "Salon de Provence",
+  "type": "postal_code"
+ },
+ "13080 Salon-de-Provence, France": {
+  "lat": 43.6405237,
+  "lon": 5.0980225,
+  "geoTown": "Salon de Provence",
+  "type": "administrative"
+ }
+}

@@ -23,3 +23,14 @@ debug_snapshots/
 /*.csv
 /*.ipynb
 .notebooks/
+
+# Pipeline outputs and logs
+/output/
+/logs/
+enrichment.db
+run_log.db
+core/.scheduler.lock
+
+# Secrets / personal settings (copy proxies.txt to the server by hand, like .env)
+proxies.txt
+.vscode/

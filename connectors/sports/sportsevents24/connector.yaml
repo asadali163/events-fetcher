@@ -1,0 +1,22 @@
+id: sportsevents24
+type: api
+coverage: ["FR"]
+entry_point: connectors.sports.sportsevents24.connector.SportsEvents24Connector
+notes: >
+  Free SportsEvents24 API (open beta, no key) — fixtures for 20 sports.
+  The API can only be queried per country + sport, never per city, so
+  discover() fetches every sport for the whole country and returns all of
+  it: the WHOLE COUNTRY lands in the raw and normalized stores. The API has
+  no coordinates, so normalize() geocodes each venue's free-text location
+  via core.geocoding.geocode_place() (full address, then without the venue
+  name, then postcode + town). validate() then rejects every event outside
+  boundaries/<City>.kml, so only events inside the city boundary reach
+  deduplication and canonical_events.db. A city needs a boundary file to
+  be usable; only Paris has one so far. Free limits are per IP: 100
+  requests/day, 5,000 records/month (records outside the city count too),
+  10 requests/minute. Soft budget of MAX_RECORDS_PER_IP (1000) records per
+  IP. Caches every page to sportsevents24_raw_<CC>_<from>_<to>.json in the
+  project root, so a re-run resumes from the saved cursor. Window is
+  days_ahead from today, max 30. connector.py also contains proxy/IP
+  rotation on limits (see its module docstring); that part isn't
+  documented or tested in this folder's README.

@@ -1,0 +1,4 @@
+# Extra dependency for the fetch dashboard only — install on top of the
+# project's root requirements.txt:
+#   pip install -r requirements.txt -r dashboard/requirements.txt
+streamlit>=1.50
