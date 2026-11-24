@@ -17,10 +17,18 @@ defaults:
   timezone: Europe/Paris
   collect:
     every_days: 15
-    at: "02:00"
+    # Noon, so a long collect (scraping + estimates) has ~18 h to finish
+    # before the next 06:00 daily upload.
+    at: "12:00"
     window_days: 30
-    # A source that runs longer than this is killed and its events discarded.
-    source_timeout_minutes: 120
+    # Safety ceiling only: a source still running after this long is treated
+    # as hung, killed and its events discarded (so a stuck browser can't block
+    # every later job). Slow-but-working sources stay far below it (Eventbrite
+    # took ~2 h for 14 days).
+    source_timeout_minutes: 420
+    # Sources that fail are retried alone after retry_after_minutes, up to
+    # this many attempts in total; then they wait for the next collect.
+    max_attempts: 3
     # Sources to skip for this city (ids from registry.yaml).
     exclude_sources: []
   daily:
@@ -29,13 +37,21 @@ defaults:
   enrich:
     enabled: true
     provider: groq
+    # Main model. Changing it re-estimates every event once (it is part of
+    # each event's input hash).
     model: openai/gpt-oss-20b
+    # Used in this order when EVERY key is out of its daily quota for the
+    # model before it: the events not done yet continue on the next model,
+    # with the same prompt and checks. Each model has its own quota per Groq
+    # account. Empty list = main model only.
+    fallback_models: [openai/gpt-oss-120b]
     batch_size: 8
     # Free Groq tier: ~200k tokens/day per model per Groq account, ~800-850
     # tokens per event -> at most this many LLM events per run PER API KEY
-    # (GROQ_API_KEY, GROQ_API_KEY_2, ... in .env; 7 keys -> 1,540). When a key
-    # hits its daily limit the next key is used; the rest wait for the next
-    # run (soonest dates first). Keys of the same Groq account share a quota.
+    # PER MODEL (GROQ_API_KEY, GROQ_API_KEY_2, ... in .env; 7 keys x 2 models
+    # -> 3,080). When a key hits its daily limit the next key is used; the
+    # rest wait for the next run (soonest dates first). Keys of the same Groq
+    # account share a quota (ours are separate accounts).
     max_llm_events_per_key: 220
     # Give up on an event the model keeps failing on after this many tries.
     max_attempts: 3
@@ -54,9 +70,13 @@ defaults:
     # Keep only the N biggest events (by expectedAttendance) in the window,
     # biggest first. Leave empty for all.
     max_events: 35
-    # At most this many of those events at the same location (same venue
-    # name, or within 150 m), so the list covers more places.
-    max_per_venue: 2
+    # A "location" = same venue name, or within 150 m.
+    # At most this many events per location over the whole window (empty = no limit).
+    max_per_venue:
+    # At most this many events per location on the same day, so a big venue
+    # counts on every day it has a big event, but same-day sessions/duplicate
+    # listings don't fill the list.
+    max_per_venue_per_day: 1
     # CloudFront cache invalidation after each successful upload.
     # Empty distribution_id = skipped. Needs cloudfront:CreateInvalidation.
     cloudfront:
@@ -75,6 +95,12 @@ defaults:
 cities:
   Paris:
     enabled: true
+    collect:
+      # First collect on this day at `at` (12:00 Paris), then every 15 days.
+      first_run_on: "2026-11-24"
+    daily:
+      # 2026-11-24's daily was cancelled; resume on this day at `at` (06:00).
+      first_run_on: "2026-11-25"
     upload:
       enabled: true
       bucket: sa-bat-data-bucket160908-dev

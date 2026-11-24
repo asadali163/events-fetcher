@@ -5,7 +5,9 @@ Writes output/<city>/events_<YYYY-MM-DD>.json and output/<city>/latest.json
 (full, with "_meta"), and output/<city>/public.json: a plain JSON array of
 the events in the final schema without "_meta" - only enabled events (unless
 upload.only_enabled is false), limited to the upload.max_events biggest by
-expectedAttendance, at most upload.max_per_venue per location - the file core/upload.py pushes to S3.
+expectedAttendance, at most upload.max_per_venue per location over the window
+and upload.max_per_venue_per_day per location on one day - the file
+core/upload.py pushes to S3.
 Each event:
   id, name, type, venueName, latitude, longitude, startTime, durationHours,
   expectedAttendance, radiusMeters, demandUpliftPercent, footfallUpliftPercent,
@@ -234,10 +236,16 @@ def _same_venue(a, b):
     return _meters(pa, pb) <= SAME_VENUE_METERS
 
 
-def public_events(events, only_enabled=True, max_events=None, max_per_venue=None):
+def _day(event):
+    return str(event.get("startTime") or "")[:10]
+
+
+def public_events(events, only_enabled=True, max_events=None, max_per_venue=None, max_per_venue_per_day=None):
     """Final-schema events without _meta. With max_events: the N biggest by
     expectedAttendance, biggest first, with duplicate listings of the same show
-    dropped and at most max_per_venue events per location."""
+    dropped, at most max_per_venue events per location over the whole window
+    and at most max_per_venue_per_day per location on the same day (either
+    limit can be left empty)."""
     chosen = [e for e in events if e.get("enabled") or not only_enabled]
     if max_events:
         chosen = sorted(chosen, key=lambda e: (-(e.get("expectedAttendance") or 0), e.get("startTime") or ""))
@@ -247,6 +255,10 @@ def public_events(events, only_enabled=True, max_events=None, max_per_venue=None
             if key in seen:
                 continue
             if max_per_venue and sum(1 for t in top if _same_venue(t, event)) >= int(max_per_venue):
+                continue
+            if max_per_venue_per_day and sum(
+                1 for t in top if _day(t) == _day(event) and _same_venue(t, event)
+            ) >= int(max_per_venue_per_day):
                 continue
             seen.add(key)
             top.append(event)
@@ -262,6 +274,7 @@ def run_export(city, days=None):
     only_enabled = upload_cfg.get("only_enabled", True)
     max_events = upload_cfg.get("max_events")
     max_per_venue = upload_cfg.get("max_per_venue")
+    max_per_venue_per_day = upload_cfg.get("max_per_venue_per_day")
     folder = OUTPUT_DIR / re.sub(r"[^a-z0-9]+", "_", city.lower()).strip("_")
     folder.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -277,7 +290,7 @@ def run_export(city, days=None):
     text = json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     dated.write_text(text, encoding="utf-8")
     (folder / "latest.json").write_text(text, encoding="utf-8")
-    public = public_events(events, only_enabled, max_events, max_per_venue)
+    public = public_events(events, only_enabled, max_events, max_per_venue, max_per_venue_per_day)
     public_path = folder / "public.json"
     public_path.write_text(json.dumps(public, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     summary = {"city": city, "days": days, "events": len(events), "enabled": payload["enabledCount"],

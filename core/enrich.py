@@ -6,9 +6,17 @@ started earlier and are still running), and estimates the ones that need it:
   - the event's LLM input changed (new capacity, status, description...),
     or the prompt version / model changed,
   - an earlier attempt failed (up to enrich.max_attempts per input).
-Soonest dates go first, and at most enrich.max_llm_events_per_key x (number of Groq keys) go to the
-LLM per run, so a quota limit only delays later dates. Rules (online,
-cancelled, outside the city) settle events without any LLM call.
+Soonest dates go first, and at most enrich.max_llm_events_per_key x (number
+of Groq keys) x (number of models) go to the LLM per run, so a quota limit
+only delays later dates. Rules (online, cancelled, outside the city) settle
+events without any LLM call.
+
+Models: enrich.model first, with every Groq key. When every key is out of
+its daily quota for that model, the events not handled yet go to
+enrich.fallback_models in order (same prompt, same checks; each model has its
+own quota per account). The input_hash always uses enrich.model, so an event
+answered by a fallback model is still up to date next run; the `model`
+column records which model actually answered.
 
 Every saved estimate also gets footfall/demand uplift percentages
 (core/attendance/uplift.py, plain arithmetic). At the end of each run the
@@ -133,18 +141,21 @@ def run_enrichment(city, days=None, max_llm_events=None, force=False):
     enrich_cfg = config.get("enrich") or {}
     settings = config.get("attendance") or {}
     days = days or (config.get("daily") or {}).get("window_days", 14)
+    # `model` is the main model: it is part of every event's input_hash, so an
+    # estimate made by a fallback model still counts as up to date next run.
     model = enrich_cfg.get("model", "openai/gpt-oss-20b")
+    models = [model] + [m for m in (enrich_cfg.get("fallback_models") or []) if m and m != model]
     batch_size = int(enrich_cfg.get("batch_size", 8))
     max_attempts = int(enrich_cfg.get("max_attempts", 3))
     if max_llm_events is None:
         per_key = enrich_cfg.get("max_llm_events_per_key")
-        if per_key:  # each Groq key (organization) has its own daily quota
-            max_llm_events = int(per_key) * max(1, len(groq_keys()))
+        if per_key:  # each Groq key (organization) has its own daily quota, per model
+            max_llm_events = int(per_key) * max(1, len(groq_keys())) * len(models)
         else:
             max_llm_events = int(enrich_cfg.get("max_llm_events_per_run", 220))
 
     summary = {
-        "city": city, "days": days, "model": model, "prompt_version": PROMPT_VERSION,
+        "city": city, "days": days, "model": model, "models": models, "prompt_version": PROMPT_VERSION,
         "in_window": 0, "up_to_date": 0, "given_up": 0, "ruled": 0,
         "llm_queued": 0, "llm_estimated": 0, "llm_failed": 0, "left_for_next_run": 0,
         "tokens": 0, "uplift_updated": 0, "stopped": None,
@@ -190,44 +201,71 @@ def run_enrichment(city, days=None, max_llm_events=None, force=False):
     print(
         f"[enrich] {city}: {len(events)} events in the next {days} days - "
         f"{summary['up_to_date']} up to date, {summary['ruled']} settled by rules, "
-        f"{len(queued)} to the LLM ({model}), {summary['left_for_next_run']} left for the next run"
+        f"{len(queued)} to the LLM ({' -> '.join(models)}), {summary['left_for_next_run']} left for the next run"
     )
 
     if queued:
         by_key = {key: (event, digest) for key, event, _, digest in queued}
+        handled = set()  # keys with a saved result or a recorded failure
+        current = {"model": model}
+        summary["by_model"] = {}
 
         def on_result(key, estimate):
             event, digest = by_key[key]
-            enrichment_store.save_estimate(key, city, event.get("date"), digest, PROMPT_VERSION, model, estimate,
-                                           uplift=uplift_from_estimate(event, estimate))
+            # digest = input_hash under the MAIN model; the model column says who answered.
+            enrichment_store.save_estimate(key, city, event.get("date"), digest, PROMPT_VERSION, current["model"],
+                                           estimate, uplift=uplift_from_estimate(event, estimate))
+            handled.add(key)
             summary["llm_estimated"] += 1
+            summary["by_model"][current["model"]]["estimated"] += 1
 
         def on_failure(key, error):
             event, digest = by_key[key]
-            enrichment_store.record_failure(key, city, event.get("date"), digest, PROMPT_VERSION, model, error)
+            enrichment_store.record_failure(key, city, event.get("date"), digest, PROMPT_VERSION, current["model"],
+                                            error)
+            handled.add(key)
             summary["llm_failed"] += 1
+            summary["by_model"][current["model"]]["failed"] += 1
 
-        client = None
-        try:
-            client = make_client(enrich_cfg.get("provider", "groq"))
-            summary["groq_keys"] = len(client.keys)
-            summary["tokens"] = estimate_with_llm(
-                client, model, city, settings,
-                [(key, event, data) for key, event, data, _ in queued],
-                batch_size, on_result, on_failure,
-            )
-        except DailyTokenLimit as error:
-            done = summary["llm_estimated"] + summary["llm_failed"]
-            summary["left_for_next_run"] += len(queued) - done
-            summary["stopped"] = f"daily LLM quota reached: {error}"
-            print(f"[enrich] STOPPED - {summary['stopped'][:200]}")
-        except LLMUnavailable as error:
-            summary["left_for_next_run"] += len(queued) - summary["llm_estimated"] - summary["llm_failed"]
-            summary["stopped"] = f"LLM unavailable: {error}"
-            print(f"[enrich] STOPPED - {summary['stopped'][:200]}")
-        if client is not None:  # tokens per key, also when the run stopped early
-            summary["tokens"] = sum(client.tokens)
-            summary["key_usage"] = client.report()
+        # Main model first with every key; when every key is out of quota for
+        # it, the events not handled yet go to the next model (same prompt,
+        # fresh set of keys - each model has its own quota per account).
+        stopped = None
+        for llm_model in models:
+            remaining = [(key, event, data) for key, event, data, _ in queued if key not in handled]
+            if not remaining:
+                break
+            current["model"] = llm_model
+            stats = summary["by_model"][llm_model] = {"queued": len(remaining), "estimated": 0, "failed": 0,
+                                                       "tokens": 0, "stopped": None}
+            if llm_model != model:
+                print(f"[enrich] switching to fallback model {llm_model} for {len(remaining)} event(s)")
+            client = None
+            try:
+                client = make_client(enrich_cfg.get("provider", "groq"))
+                summary["groq_keys"] = len(client.keys)
+                estimate_with_llm(client, llm_model, city, settings, remaining, batch_size, on_result, on_failure)
+                stopped = None
+            except DailyTokenLimit as error:
+                stopped = stats["stopped"] = f"daily LLM quota reached: {error}"
+                print(f"[enrich] {llm_model}: {stopped[:200]}")
+            except LLMUnavailable as error:  # e.g. no API key at all - another model won't help
+                stopped = stats["stopped"] = f"LLM unavailable: {error}"
+                print(f"[enrich] STOPPED - {stopped[:200]}")
+                break
+            finally:
+                if client is not None:  # tokens per key, also when the model stopped early
+                    stats["tokens"] = sum(client.tokens)
+                    stats["key_usage"] = client.report()
+            if stopped is None:
+                break
+
+        summary["tokens"] = sum(s["tokens"] for s in summary["by_model"].values())
+        unhandled = sum(1 for key, _, _, _ in queued if key not in handled)
+        summary["left_for_next_run"] += unhandled
+        if unhandled:
+            summary["stopped"] = stopped
+            print(f"[enrich] STOPPED - {unhandled} event(s) left for the next run: {str(stopped)[:200]}")
 
     try:
         summary["uplift_updated"] = refresh_uplift(city, events)

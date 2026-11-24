@@ -12,6 +12,11 @@ A job that has never succeeded is due straight away. A job that failed is
 retried after `retry_after_minutes`. If collect and daily are both due, collect
 runs first. Every run is recorded in core/run_log.db.
 
+When some sources fail during collect, the job is recorded as failed and the
+retry runs ONLY those sources, up to `collect.max_attempts` attempts in total;
+after that the job succeeds and the failed sources wait for the next regular
+collect (see job_collect()).
+
 Only one scheduler runs at a time (file lock), so a long collection simply
 makes the next ticks exit immediately until it is done.
 
@@ -22,8 +27,10 @@ Usage:
     python -m core.scheduler --run daily --city Paris      # run a job now
     python -m core.scheduler --run collect --city Paris    # (ignores the timing)
 
-Cron (every 10 minutes):
-    */10 * * * * cd /path/to/events-fetcher && .venv/bin/python -m core.scheduler >> logs/scheduler.log 2>&1
+Cron (every 10 minutes). xvfb-run gives the HEADLESS = False scrapers
+(Meetup, Eventbrite, ...) a virtual screen on a server; TZ makes every
+date.today() in the pipeline use the city's calendar day:
+    */10 * * * * cd /path/to/events-fetcher && TZ=Europe/Paris xvfb-run -a .venv/bin/python -m core.scheduler >> logs/scheduler.log 2>&1
 """
 
 import argparse
@@ -125,6 +132,14 @@ def is_due(city, job, config, now_utc=None):
     hour, minute = _at_time(job_cfg.get("at"))
     past_start_time = (local.hour, local.minute) >= (hour, minute)
 
+    # Optional `first_run_on: YYYY-MM-DD` (city's calendar): the job never runs
+    # before that day + `at`. Afterwards the normal timing applies.
+    first_day = job_cfg.get("first_run_on")
+    if first_day:
+        first_day = date.fromisoformat(str(first_day))
+        if local.date() < first_day or (local.date() == first_day and not past_start_time):
+            return False, f"first run on {first_day} at {hour:02d}:{minute:02d}"
+
     last_any = _last_run(city, job)
     if last_any and last_any["status"] == "failed":
         retry = timedelta(minutes=float(config.get("retry_after_minutes", 60)))
@@ -158,16 +173,71 @@ def _log(message):
     print(f"[scheduler {datetime.now().astimezone():%Y-%m-%d %H:%M:%S}] {message}", flush=True)
 
 
-def job_collect(city, config):
+class CollectIncomplete(Exception):
+    """Some sources failed and will be retried: the run is recorded as failed
+    (so the scheduler retries it after retry_after_minutes), but its summary
+    is kept - the next attempt reads `retry_sources` / `attempt` from it."""
+
+    def __init__(self, message, summary):
+        super().__init__(message)
+        self.summary = summary
+
+
+def _previous_collect_attempt(city):
+    """(attempt number, source ids) for this collect: continues a failed
+    attempt that asked for a retry, otherwise starts fresh (1, None = all)."""
+    conn = _conn()
+    row = conn.execute(
+        "SELECT status, summary_json FROM job_runs WHERE city = ? AND job = 'collect' "
+        "AND status != 'running' ORDER BY id DESC LIMIT 1",
+        (city,),
+    ).fetchone()
+    conn.close()
+    if not row or row["status"] != "failed" or not row["summary_json"]:
+        return 1, None
+    try:
+        previous = json.loads(row["summary_json"])
+    except ValueError:
+        return 1, None
+    if not previous.get("retry_sources"):
+        return 1, None
+    return int(previous.get("attempt") or 1) + 1, list(previous["retry_sources"])
+
+
+def job_collect(city, config, manual=False):
+    """All sources on the first attempt. If some fail, the job is recorded as
+    failed and the scheduler retries ONLY those sources after
+    retry_after_minutes, up to collect.max_attempts attempts in total; after
+    that the job succeeds anyway (failed sources listed in `gave_up_sources`)
+    and they are fetched again at the next regular collect. A manual
+    `--run collect` always starts a fresh full attempt."""
     from core.collection import run_collection
     from core.enrich import run_enrichment
 
-    summary = {"collection": run_collection(city, (config.get("collect") or {}).get("window_days"))}
+    collect_cfg = config.get("collect") or {}
+    max_attempts = max(1, int(collect_cfg.get("max_attempts", 3)))
+    attempt, source_ids = (1, None) if manual else _previous_collect_attempt(city)
+    if source_ids:
+        _log(f"{city} collect: attempt {attempt}/{max_attempts}, retrying failed source(s): {', '.join(source_ids)}")
+
+    summary = {"attempt": attempt,
+               "collection": run_collection(city, collect_cfg.get("window_days"), source_ids)}
     try:  # an enrichment problem never turns a good collection into a failed job
-        summary["enrichment"] = run_enrichment(city, (config.get("collect") or {}).get("window_days"))
+        summary["enrichment"] = run_enrichment(city, collect_cfg.get("window_days"))
     except Exception as error:
         summary["enrichment"] = {"error": f"{type(error).__name__}: {error}"}
         _log(f"{city} collect: enrichment failed (will be retried by the daily job): {error}")
+
+    failed = [s for s, info in summary["collection"]["sources"].items() if info["status"] == "failed"]
+    if failed and attempt < max_attempts:
+        summary["retry_sources"] = failed
+        raise CollectIncomplete(
+            f"{len(failed)} source(s) failed: {', '.join(failed)} - "
+            f"retrying them (attempt {attempt + 1}/{max_attempts})", summary)
+    if failed:
+        summary["gave_up_sources"] = failed
+        _log(f"{city} collect: giving up on {', '.join(failed)} after {attempt} attempt(s) "
+             f"- they run again at the next regular collect")
     return summary
 
 
@@ -192,12 +262,19 @@ def job_daily(city, config):
 JOB_FUNCTIONS = {"collect": job_collect, "daily": job_daily}
 
 
-def run_job(city, job, config):
+def run_job(city, job, config, manual=False):
     local_date = datetime.now(ZoneInfo(config.get("timezone", "UTC"))).date()
     run_id = _start_run(city, job, local_date)
     _log(f"{city}: starting {job} (run {run_id})")
     try:
-        summary = JOB_FUNCTIONS[job](city, config)
+        if job == "collect":
+            summary = job_collect(city, config, manual=manual)
+        else:
+            summary = JOB_FUNCTIONS[job](city, config)
+    except CollectIncomplete as error:
+        _finish_run(run_id, "failed", summary=error.summary, error=str(error))
+        _log(f"{city}: {job} INCOMPLETE - {error}")
+        return False
     except Exception as error:
         _finish_run(run_id, "failed", error=traceback.format_exc())
         _log(f"{city}: {job} FAILED - {type(error).__name__}: {error}")
@@ -303,7 +380,7 @@ def main():
             _mark_stale_runs()
             config = get_city_config(args.city)
             for job in (JOBS if args.run == "all" else [args.run]):
-                run_job(args.city, job, config)
+                run_job(args.city, job, config, manual=True)
         finally:
             lock.close()
         return

@@ -174,7 +174,8 @@ deduplication, tackled once there's a real reason to need it.
 
 One cron entry runs `core/scheduler.py` every 10 minutes; per-city timing lives in
 `core/pipeline.yaml` (nothing per city in cron). Paris today: collect every 15 days at
-02:00 for the next 30 days, daily refresh + output at 06:00 for the next 14 days.
+12:00 (noon) for the next 30 days (≈18 h before the next daily, so long scrapes + estimates
+finish first; each source has a 7 h safety ceiling, `source_timeout_minutes`), daily refresh + output at 06:00 for the next 14 days.
 
 ```
 collect (every N days)  core/collection.py  one PROCESS per source, timeout per source
@@ -190,11 +191,23 @@ daily   (every day)     core/enrich.py      catch-up for the next 14 days
   `sys.exit()`, interpreter crash, hang (killed after `source_timeout_minutes`) or broken import
   only marks that source failed; its events are discarded and it is fetched again next run
   (the refetch log is written only after a source's events reach canonical).
+- **Failed sources are retried automatically.** If any source fails, the collect job is recorded
+  as failed and, after `retry_after_minutes`, retried with ONLY the failed sources — up to
+  `collect.max_attempts` (3) attempts in total. After that the job succeeds anyway
+  (`gave_up_sources` in its run-log summary) and those sources wait for the next regular collect.
+  Events from a retried source are not deduplicated against the other sources' events of the
+  first attempt (only the canonical exact-key upsert applies).
 - **Estimates** live in `core/enrichment.db` (`attendance_estimates`), keyed by `canonical_key`,
   recomputed only when the event's input, the prompt version (`core/attendance/prompt.py`) or the
   model changes. Soonest dates first, at most `enrich.max_llm_events_per_key` (220) × number of Groq
-  keys LLM events per run. Keys: `GROQ_API_KEY`, `GROQ_API_KEY_2`, … in `.env`; when one hits its daily
+  keys × number of models LLM events per run. Keys: `GROQ_API_KEY`, `GROQ_API_KEY_2`, … in `.env`; when one hits its daily
   limit the next is used (keys of the same Groq account share one ≈200k tokens/day quota). The rest next run.
+- **Model fallback:** `enrich.model` (`openai/gpt-oss-20b`) runs first with every key. When every key is
+  out of quota for it, the events not done yet continue on `enrich.fallback_models`
+  (`openai/gpt-oss-120b`) — same prompt and checks, its own quota per account. The input hash
+  always uses the main model, so a fallback answer is still "up to date" next run; the `model`
+  column in `enrichment.db` records which model answered. Changing `enrich.model` itself
+  re-estimates everything once.
 - **Upload:** `upload` in `core/pipeline.yaml` (bucket, region, key). Paris →
   `s3://sa-bat-data-bucket160908-dev/public/soq-data-stag/cities/paris/events.json`, overwritten daily.
   Credentials come from `.env` / `~/.aws` / IAM role, never the repo. No credentials → skipped with a
@@ -218,11 +231,17 @@ python -m core.upload Paris --dataset-only            # only set dataset.json as
 python core/enrichment_store.py Paris                 # estimate counts by status
 ```
 
-Server cron (one line; `logs/` must exist):
+Server cron (one line; `logs/` must exist). `xvfb-run` gives the scrapers with
+`HEADLESS = False` (Meetup, Eventbrite, Luxembourg City) a virtual screen — without it they
+fail on a server with no display (`sudo apt install xvfb` if missing). `TZ=Europe/Paris` makes
+every `date.today()` in the pipeline use the Paris calendar day (collect starts at 23:00 UTC):
 
 ```
-*/10 * * * * cd /path/to/events-fetcher && .venv/bin/python -m core.scheduler >> logs/scheduler.log 2>&1
+*/10 * * * * cd /path/to/events-fetcher && TZ=Europe/Paris xvfb-run -a .venv/bin/python -m core.scheduler >> logs/scheduler.log 2>&1
 ```
+
+Cron restarts with the server, so after a reboot or outage the next tick runs whatever is
+overdue; a job cut off mid-run is marked failed and retried after `retry_after_minutes`.
 
 New city: add it to `core/cities.yaml` (country) and under `cities:` in `core/pipeline.yaml`
 (schedule overrides + `attendance` rules/venues), plus `boundaries/<City>.kml` for sportsevents24.
