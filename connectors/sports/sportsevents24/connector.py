@@ -38,7 +38,6 @@ import re
 import sys
 import time
 import unicodedata
-import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -53,7 +52,6 @@ from core.geocoding import geocode_place  # noqa: E402
 from core.locations_store import get_location  # noqa: E402
 
 API_BASE = "https://sportsevents24.com/api/v1"
-BOUNDARIES_DIR = PROJECT_ROOT / "boundaries"
 
 # From the API documentation page.
 SPORTS = {
@@ -108,73 +106,10 @@ class ApiError(Exception):
         super().__init__(f"HTTP {status}: {body}")
 
 
-# --------------------------------------------------------------------------- #
-# Boundary helpers (KML polygon + point-in-polygon)
-# --------------------------------------------------------------------------- #
-
-
-def _ring(coordinates_text):
-    ring = []
-    for triple in coordinates_text.split():
-        lon, lat = triple.split(",")[:2]
-        ring.append((float(lon), float(lat)))
-    return ring
-
-
-def load_boundary(city):
-    """Every <Polygon> in boundaries/<city>.kml as (outer_ring, [holes]),
-    rings as (lon, lat) lists. Raises ValueError if there's no usable file —
-    the same way other connectors raise for a city they don't have mapped."""
-    path = BOUNDARIES_DIR / f"{city}.kml"
-    if not path.exists():
-        raise ValueError(
-            f"No boundary for '{city}'. Add a KML polygon at boundaries/{city}.kml."
-        )
-    root = ET.parse(path).getroot()
-    polygons = []
-    for polygon in root.iter():
-        if not polygon.tag.endswith("Polygon"):
-            continue
-        outer, holes = None, []
-        for boundary in polygon:
-            coords = next(
-                (c.text for c in boundary.iter() if c.tag.endswith("coordinates")), None
-            )
-            if not coords:
-                continue
-            if boundary.tag.endswith("outerBoundaryIs"):
-                outer = _ring(coords)
-            elif boundary.tag.endswith("innerBoundaryIs"):
-                holes.append(_ring(coords))
-        if outer:
-            polygons.append((outer, holes))
-    if not polygons:
-        raise ValueError(f"No polygon found in {path}")
-    return polygons
-
-
-def _point_in_ring(lon, lat, ring):
-    """Ray casting: count the ring edges a ray going east crosses."""
-    inside = False
-    j = len(ring) - 1
-    for i in range(len(ring)):
-        xi, yi = ring[i]
-        xj, yj = ring[j]
-        if (yi > lat) != (yj > lat):
-            if lon < xi + (lat - yi) * (xj - xi) / (yj - yi):
-                inside = not inside
-        j = i
-    return inside
-
-
-def in_boundary(lat, lon, polygons):
-    if lat is None or lon is None:
-        return False
-    return any(
-        _point_in_ring(lon, lat, outer)
-        and not any(_point_in_ring(lon, lat, hole) for hole in holes)
-        for outer, holes in polygons
-    )
+# Boundary helpers (KML polygon + point-in-polygon) now live in core/boundary.py,
+# shared with the daily export; re-exported here so existing imports
+# (api_test.py, notebooks) keep working.
+from core.boundary import _point_in_ring, _ring, in_boundary, load_boundary  # noqa: E402,F401
 
 
 # --------------------------------------------------------------------------- #

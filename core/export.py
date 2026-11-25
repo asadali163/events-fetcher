@@ -3,11 +3,17 @@ joined with their attendance + radius estimates.
 
 Writes output/<city>/events_<YYYY-MM-DD>.json and output/<city>/latest.json
 (full, with "_meta"), and output/<city>/public.json: a plain JSON array of
-the events in the final schema without "_meta" - only enabled events (unless
-upload.only_enabled is false), limited to the upload.max_events biggest by
-expectedAttendance, at most upload.max_per_venue per location over the window
-and upload.max_per_venue_per_day per location on one day - the file
-core/upload.py pushes to S3.
+the events in the final schema without "_meta" - the file core/upload.py
+pushes to S3. public.json holds:
+  - only enabled events (unless upload.only_enabled is false),
+  - only events whose coordinates are inside upload.boundary_file (a KML
+    polygon, e.g. boundaries/Paris.kml) when it is set,
+  - at most upload.max_events of them: biggest expectedAttendance first, but
+    spread over the city (upload.spread: each extra event in an already-used
+    cell_km grid square scores `decay` times less), at most
+    upload.max_per_venue per location over the window and
+    upload.max_per_venue_per_day per location on one day.
+With a boundary, every event in latest.json gets _meta.insideBoundary.
 Each event:
   id, name, type, venueName, latitude, longitude, startTime, durationHours,
   expectedAttendance, radiusMeters, demandUpliftPercent, footfallUpliftPercent,
@@ -51,6 +57,7 @@ from core import enrichment_store  # noqa: E402
 from core.canonical_store import DB_PATH as CANONICAL_DB  # noqa: E402
 from core.enrich import load_window_events  # noqa: E402
 from core.attendance.uplift import parse_time as _parse_time  # noqa: E402
+from core.boundary import bounding_box, in_boundary, load_boundary_file  # noqa: E402
 from core.pipeline_config import get_city_config  # noqa: E402
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
@@ -240,31 +247,103 @@ def _day(event):
     return str(event.get("startTime") or "")[:10]
 
 
-def public_events(events, only_enabled=True, max_events=None, max_per_venue=None, max_per_venue_per_day=None):
-    """Final-schema events without _meta. With max_events: the N biggest by
-    expectedAttendance, biggest first, with duplicate listings of the same show
-    dropped, at most max_per_venue events per location over the whole window
-    and at most max_per_venue_per_day per location on the same day (either
-    limit can be left empty)."""
-    chosen = [e for e in events if e.get("enabled") or not only_enabled]
-    if max_events:
-        chosen = sorted(chosen, key=lambda e: (-(e.get("expectedAttendance") or 0), e.get("startTime") or ""))
-        seen, top = set(), []
-        for event in chosen:
-            key = _listing_key(event)
-            if key in seen:
-                continue
-            if max_per_venue and sum(1 for t in top if _same_venue(t, event)) >= int(max_per_venue):
-                continue
-            if max_per_venue_per_day and sum(
-                1 for t in top if _day(t) == _day(event) and _same_venue(t, event)
-            ) >= int(max_per_venue_per_day):
-                continue
-            seen.add(key)
-            top.append(event)
-            if len(top) >= int(max_events):
+def _size(event):
+    return event.get("expectedAttendance") or 0
+
+
+def _area(event, origin, cell_km):
+    """Grid square (row, col) of `cell_km` km containing the event, counted
+    from `origin` (lat, lon); None without coordinates."""
+    lat, lon = event.get("latitude"), event.get("longitude")
+    if lat is None or lon is None:
+        return None
+    north_km = (lat - origin[0]) * 111.32
+    east_km = (lon - origin[1]) * 111.32 * math.cos(math.radians(origin[0]))
+    return int(north_km // cell_km), int(east_km // cell_km)
+
+
+def _low_confidence(event):
+    return ((event.get("_meta") or {}).get("confidence") or "").lower() == "low"
+
+
+def _pick(candidates, max_events, max_per_venue=None, max_per_venue_per_day=None, boundary=None, spread=None,
+          max_per_venue_low_confidence=None):
+    """Greedy pick of up to max_events. Each step takes the allowed event with
+    the highest score = expectedAttendance x decay^(events already picked in
+    its area), so big events still come first, but every extra event in an
+    already-covered area counts a bit less - the list spreads over the city.
+    Areas are spread.cell_km squares (from the boundary's corner). Without
+    spread (or decay 1) this is plain "biggest first".
+    Allowed = not a duplicate listing of a picked show, at most max_per_venue
+    picked at the same location, at most max_per_venue_per_day there that day,
+    and - for an estimate the model itself rated "low" confidence - at most
+    max_per_venue_low_confidence low-confidence picks at that location (a weak
+    candidate never fills several days at the same place)."""
+    spread = spread or {}
+    cell_km = float(spread.get("cell_km") or 0)
+    decay = float(spread.get("decay", 1) if spread.get("decay") is not None else 1)
+    use_spread = cell_km > 0 and decay < 1
+    origin = (0.0, 0.0)
+    if use_spread:
+        if boundary:
+            origin = bounding_box(boundary)[:2]
+        else:
+            coords = [(e["latitude"], e["longitude"]) for e in candidates
+                      if e.get("latitude") is not None and e.get("longitude") is not None]
+            origin = (min(c[0] for c in coords), min(c[1] for c in coords)) if coords else origin
+    area = {id(e): (_area(e, origin, cell_km) if use_spread else None) for e in candidates}
+
+    def allowed(event, top, seen):
+        if _listing_key(event) in seen:
+            return False
+        if max_per_venue and sum(1 for t in top if _same_venue(t, event)) >= int(max_per_venue):
+            return False
+        if max_per_venue_per_day and sum(
+            1 for t in top if _day(t) == _day(event) and _same_venue(t, event)
+        ) >= int(max_per_venue_per_day):
+            return False
+        if max_per_venue_low_confidence is not None and _low_confidence(event) and sum(
+            1 for t in top if _low_confidence(t) and _same_venue(t, event)
+        ) >= int(max_per_venue_low_confidence):
+            return False
+        return True
+
+    pool = list(candidates)
+    top, seen, per_area = [], set(), {}
+    while pool and len(top) < max_events:
+        ranked = sorted(pool, key=lambda e: (
+            -_size(e) * (decay ** per_area.get(area[id(e)], 0) if use_spread else 1),
+            e.get("startTime") or "",
+        ))
+        dropped, pick = set(), None
+        for event in ranked:
+            if allowed(event, top, seen):
+                pick = event
                 break
-        chosen = top
+            dropped.add(id(event))  # limits only get tighter: never allowed again
+        if pick is None:
+            break
+        dropped.add(id(pick))
+        pool = [e for e in pool if id(e) not in dropped]
+        top.append(pick)
+        seen.add(_listing_key(pick))
+        per_area[area[id(pick)]] = per_area.get(area[id(pick)], 0) + 1
+    return sorted(top, key=lambda e: (-_size(e), e.get("startTime") or ""))
+
+
+def public_events(events, only_enabled=True, max_events=None, max_per_venue=None, max_per_venue_per_day=None,
+                  boundary=None, spread=None, max_per_venue_low_confidence=None):
+    """Final-schema events without _meta: enabled events (unless
+    only_enabled is False), only those inside `boundary` (polygons from
+    core.boundary) when given, then with max_events the picked ones (see
+    _pick: big events first, spread over the city, venue limits), biggest
+    first."""
+    chosen = [e for e in events if e.get("enabled") or not only_enabled]
+    if boundary:
+        chosen = [e for e in chosen if in_boundary(e.get("latitude"), e.get("longitude"), boundary)]
+    if max_events:
+        chosen = _pick(chosen, int(max_events), max_per_venue, max_per_venue_per_day, boundary, spread,
+                       max_per_venue_low_confidence)
     return [{f: e.get(f) for f in PUBLIC_FIELDS} for e in chosen]
 
 
@@ -275,6 +354,14 @@ def run_export(city, days=None):
     max_events = upload_cfg.get("max_events")
     max_per_venue = upload_cfg.get("max_per_venue")
     max_per_venue_per_day = upload_cfg.get("max_per_venue_per_day")
+    spread = upload_cfg.get("spread") or {}
+    # A configured but missing/broken boundary file raises: better a failed
+    # (retried) daily job than an upload that ignores the boundary.
+    boundary_file = upload_cfg.get("boundary_file")
+    boundary = load_boundary_file(boundary_file) if boundary_file else None
+    if boundary:
+        for event in events:
+            event["_meta"]["insideBoundary"] = in_boundary(event.get("latitude"), event.get("longitude"), boundary)
     folder = OUTPUT_DIR / re.sub(r"[^a-z0-9]+", "_", city.lower()).strip("_")
     folder.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -290,11 +377,16 @@ def run_export(city, days=None):
     text = json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     dated.write_text(text, encoding="utf-8")
     (folder / "latest.json").write_text(text, encoding="utf-8")
-    public = public_events(events, only_enabled, max_events, max_per_venue, max_per_venue_per_day)
+    public = public_events(events, only_enabled, max_events, max_per_venue, max_per_venue_per_day,
+                           boundary, spread, upload_cfg.get("max_per_venue_low_confidence"))
     public_path = folder / "public.json"
     public_path.write_text(json.dumps(public, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     summary = {"city": city, "days": days, "events": len(events), "enabled": payload["enabledCount"],
                "file": str(dated), "public_file": str(public_path), "public_events": len(public)}
+    if boundary:
+        summary["boundary_file"] = boundary_file
+        summary["enabled_inside_boundary"] = sum(
+            1 for e in events if e["enabled"] and e["_meta"].get("insideBoundary"))
     print(f"[export] {json.dumps(summary)}")
     return summary
 

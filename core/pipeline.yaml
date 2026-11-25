@@ -67,16 +67,35 @@ defaults:
     key: ""
     # true: only events with an estimate (enabled=true); false: every event.
     only_enabled: true
-    # Keep only the N biggest events (by expectedAttendance) in the window,
-    # biggest first. Leave empty for all.
-    max_events: 35
+    # Only events whose coordinates are inside this KML polygon (path from
+    # the project root, e.g. boundaries/Paris.kml). Events without
+    # coordinates can't be checked and are left out. Empty = no boundary.
+    # A missing file fails the daily job (retried) instead of uploading
+    # an unfiltered list.
+    boundary_file: ""
+    # Keep at most N events in the window (biggest expectedAttendance first,
+    # spread over the city - see `spread`). Leave empty for all.
+    max_events: 50
     # A "location" = same venue name, or within 150 m.
     # At most this many events per location over the whole window (empty = no limit).
-    max_per_venue:
-    # At most this many events per location on the same day, so a big venue
-    # counts on every day it has a big event, but same-day sessions/duplicate
-    # listings don't fill the list.
+    max_per_venue: 3
+    # At most this many events per location on the same day, so same-day
+    # sessions/duplicate listings don't fill the list.
     max_per_venue_per_day: 1
+    # Weak candidates: events whose estimate the model itself rated "low"
+    # confidence get at most this many picks per location over the window
+    # (confident events at that location can still fill max_per_venue).
+    # Empty = no extra limit.
+    max_per_venue_low_confidence: 1
+    # Spread the picks over the city: the area is cut into cell_km x cell_km
+    # squares and each event already picked in a square makes the next one
+    # there score `decay` times less (score = expectedAttendance x
+    # decay^picked_in_square). decay 1 or cell_km 0 = plain biggest first.
+    # Tested on Paris (25 Nov): 2 km / 0.6 -> picks in 21 squares instead of
+    # 14, max 4 per square instead of 9, total attendance only -5%.
+    spread:
+      cell_km: 2
+      decay: 0.6
     # CloudFront cache invalidation after each successful upload.
     # Empty distribution_id = skipped. Needs cloudfront:CreateInvalidation.
     cloudfront:
@@ -103,6 +122,8 @@ cities:
       first_run_on: "2026-11-25"
     upload:
       enabled: true
+      # Only events inside the city of Paris (20 arrondissements + both Bois).
+      boundary_file: boundaries/Paris.kml
       bucket: sa-bat-data-bucket160908-dev
       region: ap-southeast-1
       key: public/soq-data-stag/cities/paris/events.json
@@ -124,7 +145,10 @@ cities:
         Bataclan ~1,500; La Cigale ~1,400; Trianon ~1,000; Elysee Montmartre ~1,300; theatres 300-1,000;
         small clubs and bars 50-300; jazz clubs 50-150; chapels/small churches 80-300.
       # Well-known single-hall venues -> max capacity, used as a hard ceiling.
-      # Matched as lower-case ASCII text inside the event's venue name.
+      # Matched as whole words (lower-case ASCII) inside the event's venue
+      # name, e.g. "Adidas Arena - Paris" -> adidas arena. NOT matched when
+      # the name is an annex named after the venue ("La Taverne de l'Olympia",
+      # "Bar du Zenith": known name right after de/du/des/d').
       known_venues:
         stade de france: 80000
         parc des princes: 48000

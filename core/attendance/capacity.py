@@ -121,10 +121,35 @@ def register_capacity(event, city_settings):
     return found
 
 
+def _plain_words(text):
+    """'La Taverne de l’Olympia' -> 'la taverne de l olympia' (ASCII, lower
+    case, every non-alphanumeric run -> one space)."""
+    text = str(text or "").replace("’", "'")
+    return " ".join(re.findall(r"[a-z0-9]+", ascii_upper(text).lower()))
+
+
+# "<something> de/du/des/d' [l'/la/le/les] <known venue>" is a smaller place
+# next to or inside the venue (La Taverne de l'Olympia, Bar du Zenith), not
+# the venue's main hall - its capacity must not be used as a ceiling.
+_ANNEX_PREFIX = r"\b(?:de|du|des|d)(?: (?:l|la|le|les))? "
+
+
 def known_venue_capacity(event, city_settings):
-    name = ascii_upper(str(event.get("venue_name") or "")).lower()
-    venues = city_settings.get("known_venues") or {}
-    return next((int(cap) for venue, cap in venues.items() if str(venue).lower() in name), None)
+    """Capacity from the city's known-venues table when the venue name
+    contains a known venue as whole words (so "Adidas Arena - Paris" or
+    "Zenith Paris - La Villette" match) - but not when it is only an annex
+    named after it ("La Taverne de l'Olympia"), see _ANNEX_PREFIX."""
+    name = _plain_words(event.get("venue_name"))
+    if not name:
+        return None
+    for venue, cap in (city_settings.get("known_venues") or {}).items():
+        key = _plain_words(venue)
+        if not key or not re.search(rf"\b{re.escape(key)}\b", name):
+            continue
+        if re.search(rf"{_ANNEX_PREFIX}{re.escape(key)}\b", name):
+            continue
+        return int(cap)
+    return None
 
 
 def verified_capacity(event, city_settings):

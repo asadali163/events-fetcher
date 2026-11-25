@@ -183,9 +183,20 @@ collect (every N days)  core/collection.py  one PROCESS per source, timeout per 
                         core/enrich.py      attendance + radius for new/changed events
 daily   (every day)     core/enrich.py      catch-up for the next 14 days
                         core/export.py      output/<city>/events_<date>.json + latest.json (full, with _meta)
-                                            + public.json (clean array, top `max_events` (35) by attendance)
+                                            + public.json (clean array, up to `max_events` (50), see below)
                         core/upload.py      public.json -> S3 (overwrites upload.key), dataset.json asOf -> run date − 1 day, CloudFront invalidation
 ```
+
+- **What goes into `public.json` (the uploaded list)** — settings under `upload:` in `core/pipeline.yaml`:
+  only enabled events (LLM estimate, not flagged outside the city) whose coordinates are inside
+  `boundary_file` (Paris: `boundaries/Paris.kml`, the city of Paris incl. both Bois — events with no
+  coordinates are left out); at most `max_events` (50) of them, at most `max_per_venue` (3) per
+  location over the 14 days, `max_per_venue_per_day` (1) per location per day, and
+  `max_per_venue_low_confidence` (1) "low"-confidence estimates per location — a weak candidate
+  never takes several days at the same place (location = same venue name or within 150 m). Picking is "biggest expected attendance first, spread over the city":
+  the city is cut into `spread.cell_km` (2 km) squares and each event already picked in a square
+  makes the next one there score `spread.decay` (0.6) times less. Shared boundary code:
+  `core/boundary.py` (also used by the SportsEvents24 connector).
 
 - **Failing sources never break a run.** Each source runs in its own process: an exception,
   `sys.exit()`, interpreter crash, hang (killed after `source_timeout_minutes`) or broken import
